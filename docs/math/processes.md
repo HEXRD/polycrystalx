@@ -1,0 +1,128 @@
+## Linear Elasticity
+
+**Strong Form.**
+Conservation of linear and angular momentum must be satisfied.
+For smooth fields with applied body force field $f$, the equations are:
+
+\begin{align}
+  \newcommand{\Div}{\mathrm{div}\ }
+  \label{eq:momentum}
+  \Div \sigma + f &= 0 \\
+  \sigma &= \sigma^T
+\end{align}
+
+For linear elasticity, the second order stress and strain tensors,
+$ \sigma$ and $\epsilon$
+are related by the fourth order stiffness tensor $\mathcal{C}$.
+\begin{equation}
+  \label{eq:stiffness}
+  \sigma = \mathcal{C}:\epsilon
+\end{equation}
+
+**Boundary Conditions.**
+In practice, boundary conditions are applied on sections of the boundary
+either as displacements or tractions, or a combination of both. For example,
+a box mesh has six natural sections, corresponding to the min and max value
+in each component direction.  You may want to apply zero displacements on the
+$z=0$ section and apply a displacement only in the $z$-direction on the top
+section, while the $x$ and $y$ components of applied traction are zero on the
+same surface.
+
+To make this more precise, the boundary is divided into a number ($n$) of
+sections, $\Gamma_i$. Over each section, a displacement field or a traction
+field can be applied for each component. On $\Gamma_i$
+\begin{align}
+  \label{eq:bcs}
+	u \cdot e_j &= d_{ij}, \text{ or} \\
+        t \cdot e_j &= g_{ij}, \text{ where $t=\sigma\ n$ is the traction} \\
+\end{align}
+
+**Null Space and Consistency Conditions**
+
+Note that in the case of pure traction boundary conditions, there are consistency conditions.
+\begin{align}
+   \int f dx = \int_\Gamma t ds
+\end{align}
+Also, in that case, any rigid motion (6 degrees of freedom) is a solution when
+$t=0$.
+
+In fact, if any displacement component is unspecified over the whole boundary,
+there is a consistency condition, as above, but for that component.
+
+If your displacement boundary conditions eliminate rigid motions, you should
+be good.  See the Implementation section for more details.
+
+**Weak Form.**
+Notationally, ${\cal H}$ is the function space of 3D distributions with
+square integrable weak derivatives with zero displacements as implied by the
+boundary conditions described above.
+The surface is denoted by $\Gamma$ and $t$  represents the traction field
+applied there.
+For simplicity, $t$ is defined to have value 0 where displacement boundary condtions are in effect.
+
+For the homogeneous problem, We seek the material displacement field
+$u \in {\cal H}$ that satisfies the weak form of linear elasticity
+(see equations above):
+\begin{equation}
+  \newcommand{\symm}{\mathrm{symm}\ }
+
+  \int  \mathcal{C}:\symm\nabla u \cdot  \symm\nabla v\ dx = \int_\Gamma t \cdot v\ ds,
+  \text{ for all test functions $v \in {\cal H}$}
+\end{equation}
+Here $dx$ is the volume integration element, and $ds$ is the surface integration element.
+The test function $v$ is an arbitrary member of~${\cal H}$.
+Note that due to the discontinuities in the stiffness tensor,
+$\sigma$ will have jump discontinuities at grain boundaries, and
+so the smooth form of the equilibrium equations does not apply,
+but the weak form does.
+
+**Discrete Form.**
+We obtain the finite element formulation when we restrict the solution
+space ${\cal H}$ to
+a finite dimensional subspace ${\cal H}_h$ associated with the mesh.
+The discrete equations are:
+\begin{equation}
+\newcommand{\symm}{\mathrm{symm}\ }
+  \int  \mathcal{C}:\symm\nabla u_h \cdot  \symm\nabla v_h\ dx = \int_\Gamma t \cdot v_h\ ds,
+  \text{ for all test functions $v_h \in {\cal H}_h$}
+\end{equation}
+where $u_h \in {\cal H}_h$ is the discrete displacement field.
+The discrete test function $v_h$ is an arbitrary member of~${\cal H}_h$.
+
+
+**Implementation.**
+Our implementation calls for these coefficients:
+* orientation field
+* stiffness field
+* traction boundary conditions
+* displacement boundary conditions
+
+We do not check for the consistency condition (at this point).  As for the
+null space (rigid motions), the Krylov iterations give a solution with zero
+projection on the null space. See (reference)
+
+### Test Problems
+
+**Shears.**
+We have test problems for shears $xz$, $zy$ and $yx$; for each case, we have one demo with all displacement boundary conditions and another with displacements on the $z = z_{\min}$ boundary and traction on the rest (using the identity as the stiffness, so that stress is equal to strain).
+Generally, if we have
+\begin{align}
+    u_1 & = \alpha_2 y + \alpha_3 z \\
+    u_2 & = \beta_1 x + \beta_3 z \\
+    u_3 & = \gamma_1 x + \gamma_2 y
+\end{align}
+then the strain is given by:
+\begin{align}
+    \label{eqn:strain}
+    \nabla_S u = \frac{1}{2}
+    \begin{bmatrix}
+        0 & \alpha_2 + \beta_1 & \alpha_3 + \gamma_1\\
+        \beta_1 + \alpha_2 & 0 & \beta_3 + \gamma_2\\
+        \gamma_1 + \alpha_3 & \gamma_2 + \beta_3 & 0
+    \end{bmatrix}
+\end{align}
+These stains (along with the stiffness) can then be used to determine traction boundary conditions.
+
+**Rescalings.*8
+This case includes uniaxial or plane strain extension or compression
+and pure dilation.
