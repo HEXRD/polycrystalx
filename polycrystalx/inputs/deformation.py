@@ -70,25 +70,3 @@ displacement_bcs: list
 traction_bcs: list of inputs.deformation.TractionBC
     list of traction boundary condition specifications
 """
-
-
-Slip = namedtuple(
-    "Slip", ["name", "s0", "stress_0", "stress_t", "dt", "nsteps"],
-)
-Slip.__doc__ = """Deformation input for Slip
-
-Parameters
------------
-name: str
-    name of this deformation input
-s0: vector valued function
-    intial state variable field
-stress_0: symmetric tensor valued function
-    stress field in spatial coordinate system at initial time
-stress_t: symmetric tensor valued function
-    stress field in spatial coordinate system at final time
-dt: float
-    time increment
-nsteps: int
-    number of time steps
-"""

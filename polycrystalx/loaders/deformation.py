@@ -138,18 +138,3 @@ class LinearElasticity:
         """
         if self.userinput.plastic_distortion is not None:
             return FunctionLoader(self.userinput.plastic_distortion).load(T)
-
-
-class Slip:
-
-    def __init__(self, userinput):
-        """load deformation input
-
-        userinput - instance of inputs.deformation.Elasticity
-        """
-        self.userinput = userinput
-        self.s0 = self.userinput.s0
-        self.stress_0 = self.userinput.stress_0
-        self.stress_t = self.userinput.stress_t
-        self.dt = self.userinput.dt
-        self.nsteps = self.userinput.nsteps

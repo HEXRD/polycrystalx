@@ -1,11 +1,10 @@
 """This is the module for defining and executing model processes"""
 from .. import utils
 from .linear_elasticity import LinearElasticity
-from .slip import Slip
 
 
 process_dict = {}
-for p in (LinearElasticity, Slip):
+for p in (LinearElasticity,):
     process_dict[p.name] = p
 
 

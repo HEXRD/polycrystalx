@@ -11,7 +11,3 @@ class LinearElasticity:
     """
     def __init__(self, userinput):
         self.materials = userinput.materials
-
-
-# Slip has the Same interface as Elasticty.
-Slip = LinearElasticity
