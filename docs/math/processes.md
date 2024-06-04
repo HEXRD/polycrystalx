@@ -22,7 +22,7 @@ are related by the fourth order stiffness tensor $\mathcal{C}$.
 **Boundary Conditions.**
 In practice, boundary conditions are applied on sections of the boundary
 either as displacements or tractions, or a combination of both. For example,
-a box mesh has six natural sections, corresponding to the min and max value
+a box mesh has six natural boundary sections, corresponding to the min and max value
 in each component direction.  You may want to apply zero displacements on the
 $z=0$ section and apply a displacement only in the $z$-direction on the top
 section, while the $x$ and $y$ components of applied traction are zero on the
@@ -70,7 +70,7 @@ $u \in {\cal H}$ that satisfies the weak form of linear elasticity
   \text{ for all test functions $v \in {\cal H}$}
 \end{equation}
 Here $dx$ is the volume integration element, and $ds$ is the surface integration element.
-The test function $v$ is an arbitrary member of~${\cal H}$.
+The test function $v$ is an arbitrary member of ${\cal H}$.
 Note that due to the discontinuities in the stiffness tensor,
 $\sigma$ will have jump discontinuities at grain boundaries, and
 so the smooth form of the equilibrium equations does not apply,
@@ -87,7 +87,7 @@ The discrete equations are:
   \text{ for all test functions $v_h \in {\cal H}_h$}
 \end{equation}
 where $u_h \in {\cal H}_h$ is the discrete displacement field.
-The discrete test function $v_h$ is an arbitrary member of~${\cal H}_h$.
+The discrete test function $v_h$ is an arbitrary member of ${\cal H}_h$.
 
 
 **Implementation.**
@@ -99,34 +99,9 @@ Our implementation calls for these coefficients:
 
 We do not check for the consistency condition (at this point).  As for the
 null space (rigid motions), the Krylov iterations give a solution with zero
-projection on the null space. See [Bochev et al., 2005](https://doi.org/10.1137/S0036144503426074).
-
-
-### Test Problems
-
-**Shears.**
-We have test problems for shears $xz$, $zy$ and $yx$; for each case, we have one demo with all displacement boundary conditions and another with displacements on the $z = z_{\min}$ boundary and traction on the rest (using the identity as the stiffness, so that stress is equal to strain).
-Generally, if we have
-\begin{align}
-    u_1 & = \alpha_2 y + \alpha_3 z \\
-    u_2 & = \beta_1 x + \beta_3 z \\
-    u_3 & = \gamma_1 x + \gamma_2 y
-\end{align}
-then the strain is given by:
-\begin{align}
-    \label{eqn:strain}
-    \nabla_S u = \frac{1}{2}
-    \begin{bmatrix}
-        0 & \alpha_2 + \beta_1 & \alpha_3 + \gamma_1\\
-        \beta_1 + \alpha_2 & 0 & \beta_3 + \gamma_2\\
-        \gamma_1 + \alpha_3 & \gamma_2 + \beta_3 & 0
-    \end{bmatrix}
-\end{align}
-These stains (along with the stiffness) can then be used to determine traction boundary conditions.
-
-**Rescalings.*8
-This case includes uniaxial or plane strain extension or compression
-and pure dilation.
+projection on the null space. See [Bochev et al., 2005](https://doi.org/10.1137/S0036144503426074). That should probably be OK for problems with zero body
+forces and zero tractions on the same components.  Point boundary conditions
+have not been implemented.
 
 
 ### References
