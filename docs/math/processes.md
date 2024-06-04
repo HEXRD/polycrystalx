@@ -99,7 +99,8 @@ Our implementation calls for these coefficients:
 
 We do not check for the consistency condition (at this point).  As for the
 null space (rigid motions), the Krylov iterations give a solution with zero
-projection on the null space. See (reference)
+projection on the null space. See [Bochev et al., 2005](https://doi.org/10.1137/S0036144503426074).
+
 
 ### Test Problems
 
@@ -126,3 +127,8 @@ These stains (along with the stiffness) can then be used to determine traction b
 **Rescalings.*8
 This case includes uniaxial or plane strain extension or compression
 and pure dilation.
+
+
+### References
+
+Bochev, Pavel, and R. B. Lehoucq. “On the Finite Element Solution of the Pure Neumann Problem.” SIAM Review 47, no. 1 (January 2005): 50–66. https://doi.org/10.1137/S0036144503426074.
