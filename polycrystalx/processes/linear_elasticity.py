@@ -35,7 +35,6 @@ class LinearElasticity:
     name = "linear-elasticity"
 
     def __init__(self, user_input):
-        print(user_input)
         self.loader = _Loader(user_input)
         self.mpirank = self.loader.mesh.comm.rank
         print("My rank is ", self.mpirank)
