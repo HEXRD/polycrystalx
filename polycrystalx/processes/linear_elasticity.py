@@ -118,7 +118,7 @@ class LinearElasticity:
 
         eps_int = np.zeros((num_grains := len(g_volumes), 6))
 
-        V = fem.FunctionSpace(ldr.mesh, ("DG", 0))
+        V = fem.functionspace(ldr.mesh, ("DG", 0))
         gi_form, indicator, func = grain_integral(ldr.mesh, V)
 
         indmap = ldr.mesh.topology.index_map(ldr.mesh.topology.dim)

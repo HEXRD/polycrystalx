@@ -46,7 +46,7 @@ class Polycrystal:
         indmap = msh.topology.index_map(msh.topology.dim)
         num_cells = indmap.size_local
         midpoints = dolfinx.mesh.compute_midpoints(
-            msh, msh.topology.dim, list(np.arange(num_cells, dtype=np.int32))
+            msh, msh.topology.dim, np.arange(num_cells, dtype=np.int32)
         )
         gids = self.polycrystal.grain(midpoints).astype(np.int32)
         cell_tags = dolfinx.mesh.meshtags(
@@ -67,14 +67,26 @@ class Polycrystal:
         for i in range(num_cells):
             gcell_d[gids[i]].append(i)
 
+        # For fenicsx 0.8.
+        for k in gcell_d:
+            gcell_d[k] = np.array(gcell_d[k], dtype=int)
+
         return gcell_d
 
     def orientation_field(self, T, grain_cells):
         """Orientation Field
 
-        msh - the mesh
-        T - the Tensor function space
-        grain_cells - dictionary of lists, list of cells for each grain
+        PARAMETERS
+        ----------
+        T: tensor function space
+           then function space for orientations
+        grain_cells: dictionary
+           map of cell ID arrays to grains
+
+        RETURNS
+        -------
+        tensor valued function
+           the orientation field on the mesh
         """
         ori_fld = dolfinx.fem.Function(T)
         for gi in range(self.polycrystal.num_grains):
