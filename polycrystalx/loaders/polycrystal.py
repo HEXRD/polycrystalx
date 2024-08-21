@@ -69,7 +69,7 @@ class Polycrystal:
 
         # For fenicsx 0.8.
         for k in gcell_d:
-            gcell_d[k] = np.array(gcell_d[k], dtype=int)
+            gcell_d[k] = np.array(gcell_d[k], dtype=np.int32)
 
         return gcell_d
 
