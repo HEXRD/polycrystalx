@@ -23,6 +23,15 @@ from ..forms.linear_elasticity import (
 from ..utils import grain_volumes, grain_integrals
 
 
+default_petsc_options={
+    "ksp_type": "cg",
+    "ksp_rtol": 1e-6,
+    "ksp_atol": 1e-10,
+    "ksp_max_it": 5000,
+    "pc_type": "jacobi",
+}
+
+
 class LinearElasticity:
     """Linear elastic process
 
@@ -61,15 +70,24 @@ class LinearElasticity:
         print("setting up linear problem", flush=True)
         problem = LinearProblem(
             a, L, bcs=mybcs,
-            petsc_options={"ksp_type": "preonly", "pc_type": "lu"}
+            petsc_options=default_petsc_options
         )
+        # petsc_options={"ksp_type": "preonly", "pc_type": "lu"}
 
         with Timer() as t:
             print("starting linear solver", flush=True)
             uh = problem.solve()
             print(f"linear solver time: {t.elapsed()}")
-            print("postprocessing ...")
-            self.postprocess(uh, ldr)
+
+        solver = problem.solver
+        if solver.is_converged:
+            print(f"solver converged: iterations = {solver.its}")
+        else:
+            msg = f"solver divverged: iterations = {solver.its}"
+            raise RuntimeError(msg)
+
+        print("postprocessing")
+        self.postprocess(uh, ldr)
 
         return uh
 
