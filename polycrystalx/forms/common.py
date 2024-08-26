@@ -163,7 +163,7 @@ def grain_volume(msh):
        generic form for integrating i(x) * dx, where `i` is an indicator
        function for a grain
     """
-    V = fem.FunctionSpace(msh, ("DG", 0))
+    V = fem.functionspace(msh, ("DG", 0))
     indicator = fem.Function(V)
     dx = Measure("dx", domain=msh)
 
@@ -187,7 +187,7 @@ def grain_integral(msh, V):
        function for a grain, and `f` is a function to be integrated over the
        grains
     """
-    Vind = fem.FunctionSpace(msh, ("DG", 0))
+    Vind = fem.functionspace(msh, ("DG", 0))
     indicator = fem.Function(Vind)
     func = fem.Function(V)
     dx = Measure("dx", domain=msh)

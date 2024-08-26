@@ -112,7 +112,7 @@ def grain_volumes(comm, gv_form, indicator, grain_cells):
     indicator: dolfinx Function
         inidcator function for the gv_form
     grain_cells: dict
-        dictionary giving list of cells for each grain
+        dictionary giving array of cells for each grain
 
     Returns
     -------
