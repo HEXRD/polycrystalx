@@ -107,3 +107,35 @@ have not been implemented.
 ### References
 
 Bochev, Pavel, and R. B. Lehoucq. “On the Finite Element Solution of the Pure Neumann Problem.” SIAM Review 47, no. 1 (January 2005): 50–66. https://doi.org/10.1137/S0036144503426074.
+
+
+
+## Thermal Conductivity
+
+**Strong Form.**
+The equations for steady heat flow are:
+\begin{align}
+  \label{eq:thermal}
+  -\Div q + h &= 0 \\
+\end{align}
+where $q = -K \nabla \theta $ is the flux vector field,
+$K$ is the (symmetric) thermal conductivity tensor
+and $\theta$ is the temperature field, $h$ and is a volumetric heat source.
+
+**Boundary Conditions.**
+Boundary conditions will be some combination of fixed temperature ($\theta$) or
+normal flux ($q_n = q \cdot n$).
+
+**Weak Form.**
+\begin{equation}
+  \int  K \nabla \theta \cdot  \nabla v\ dx =
+   \int h v\ dx + \int_\Gamma q_n\  v\ ds
+\end{equation}
+where $q_b$ is flux on the boundary, and $v$ is a test function.
+
+### References
+
+Lienhard, J. H., V and Lienhard, J. H., IV. A Heat Transfer Textbook, 6th ed. Cambridge MA: Phlogiston Press, 2024.
+
+
+Ohta, Kenji, Yu Nishihara, Yuki Sato, Kei Hirose, Takashi Yagi, Saori I. Kawaguchi, Naohisa Hirao, and Yasuo Ohishi. “An Experimental Examination of Thermal Conductivity Anisotropy in Hcp Iron.” Frontiers in Earth Science 6 (November 6, 2018). https://doi.org/10.3389/feart.2018.00176.
