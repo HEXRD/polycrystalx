@@ -1,6 +1,9 @@
 """Forms for Thermal Conductivity"""
+from collections import namedtuple
 from dolfinx import fem
 from ufl import dot, inner, grad, sym, dx, TrialFunction, TestFunction
+
+from .common import tosample
 
 
 _coeffs = ["orientation", "stiffness", "body_heat", "fluxes"]
@@ -78,49 +81,18 @@ class ThermalConductivity:
         v = TestFunction(self.V)
         c = self.coefficients
 
-        a = inner(sigs_3x3(u, c.stiffness, c.orientation), sym(grad(v))) * dx
+        a = inner(tosample(c.stiffness, c.orientation) * grad(u), grad(v)) * dx
 
         # Initialize the linear functional.
-        if c.body_force is None:
-            L = dot(fem.Constant(self.msh, (0, 0, 0)), v) * dx
+
+        if c.bodyh is None:
+            L = dot(fem.Constant(self.msh, 0), v) * dx
         else:
-            L = dot(c.body_force, v) * dx
+            L = c.bodyh * v * dx
 
-        if c.plastic_distortion is not None:
-            Cbeta_form = self._C_beta_s_form(
-                c.plastic_distortion, c.stiffness, c.orientation
-            )
-            L += inner(Cbeta_form, sym(grad(v))) * dx
+        # Add in the boundary fluxes.
 
-        # Add in the tractions.
-        for trac in c.tractions:
-            if trac.component is None:
-                L += inner(trac.value, v) * trac.ds
-            else:
-                raise NotImplementedError(
-                    "traction components not yet implemented--use full vector "
-                    "with zero components as needed"
-                )
+        for flux in c.fluxes:
+            L += flux.value * v * flux.ds
 
         return a, L
-
-    @staticmethod
-    def _C_beta_s_form(beta_s_3x3, stiff_c, orient):
-        """apply stiffness to a tensor field
-
-        beta_s - the tensor field in sample frame (in sample frame)
-        stiff_c - the stiffness matrix (in crystal frame)
-
-        RETURNS
-
-        Cbeta_s - form for the stiffness times the tensor field (in sample
-                  frame)
-        """
-        # Note that the stiffness matrix operates only on symmetric matrices.
-        beta_c_3x3 = tocrystal(sym(beta_s_3x3), orient)
-        beta_c_6 = to6vector(beta_c_3x3)
-        Cbeta_c_6 = dot(stiff_c, beta_c_6)
-        Cbeta_c_3x3 = totensor(Cbeta_c_6)
-        Cbeta_s_3x3 = tosample(Cbeta_c_3x3, orient)
-
-        return Cbeta_s_3x3
