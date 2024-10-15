@@ -45,6 +45,10 @@ See Also
 --------
 boundary_values_template: template for boundary value functions
 """
+
+
+# This section is for the LinearElasticity process.
+
 DirichletBC = BoundaryCondition
 DisplacementBC = BoundaryCondition
 TractionBC = BoundaryCondition
@@ -69,4 +73,29 @@ displacement_bcs: list
     list of DisplacementBC instances
 traction_bcs: list of inputs.deformation.TractionBC
     list of traction boundary condition specifications
+"""
+
+
+# This section is for the HeatTransfer process.
+
+TemperatureBC = BoundaryCondition
+FluxBC = BoundaryCondition
+
+
+HeatTransfer = namedtuple(
+    "HeatTransfer", ["name", "body_heat", "temperature_bcs", "flux_bcs"],
+    defaults=[None, [], []]
+)
+HeatTransfer.__doc__ = """Deformation input for heat transfer
+
+Parameters
+-----------
+name: str
+    name of this deformation input
+body_heat: inputs.function.Function
+    force density function specification
+temperature_bcs: list
+    list of temperature boundary condition specifications
+flux_bcs: list of inputs.deformation.TractionBC
+    list of flux boundary condition specifications
 """
