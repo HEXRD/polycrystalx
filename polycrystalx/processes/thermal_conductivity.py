@@ -44,7 +44,7 @@ class _Loader:
 
         # Microstructure Data
         self.polycrystal_data = polycrystal.Polycrystal(
-            input_mod.polycrystal_input
+            job.polycrystal_input
         )
         if self.polycrystal_data.use_meshtags:
             self.cell_tags = self.mesh_data.cell_tags
@@ -62,14 +62,10 @@ class _Loader:
         self._stiffness_fld = self._make_stiffness_fld()
 
         # Deformation Data
-        self.deformation_data = deformation.LinearElasticity(
-            input_mod.deformation_input
+        self.deformation_data = deformation.HeatTransfer(
+            job.deformation_input
         )
-        self.force_density = self.deformation_data.force_density(self.V)
-
-        self.plastic_distortion = self.deformation_data.plastic_distortion(
-            self.T
-        )
+        self.body_heat = self.deformation_data.body_heat(self.V)
 
     @property
     def mesh(self):
@@ -80,30 +76,28 @@ class _Loader:
         return self._stiffness_fld
 
     def _make_stiffness_fld(self):
-        stf_fld= fem.Function(self.T6)
+        stf_fld= fem.Function(self.T)
         ms = self.polycrystal_data.polycrystal
         for gi in range(ms.num_grains):
             phase = int(ms.phase(np.array([gi])))
             matl = self.material_data.materials[phase]
             cells = self.grain_cells[gi]
-            stf = matl.stiffness
-            stf_fun = lambda x: self._stiffness(stf, x)
-            stf_fld.interpolate(stf_fun, cells)
+            stf = matl.conductivity
+            stf_fld.interpolate(
+                lambda x: np.tile(stf.reshape(9,1), x.shape[1]), cells
+            )
         return stf_fld
-
-    def _stiffness(self, stf, x):
-        return np.tile(stf.reshape(36,1), x.shape[1])
 
     @property
     def boundary_dict(self):
         return self.mesh_data.boundary_dict
 
     @property
-    def displacement_bcs(self):
-        return self.deformation_data.displacement_bcs(
+    def temperature_bcs(self):
+        return self.deformation_data.temperature_bcs(
             self.V, self.boundary_dict
         )
 
     @property
-    def traction_bcs(self):
-        return self.deformation_data.traction_bcs(self.V, self.boundary_dict)
+    def flux_bcs(self):
+        return self.deformation_data.flux_bcs(self.V, self.boundary_dict)
