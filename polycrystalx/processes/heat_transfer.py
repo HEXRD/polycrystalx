@@ -1,29 +1,73 @@
-"""Thermal Conductivity Process"""
+"""Heat Transfer"""
 import numpy as np
+from dolfinx import fem, log, io
+from dolfinx.common import Timer
+from dolfinx.fem.petsc import LinearProblem
+from mpi4py import MPI
 
 from ..loaders import mesh
 from ..loaders import material
 from ..loaders import polycrystal
 from ..loaders import deformation
 
+from ..forms.heat_transfer import HeatTransferProblem
 
-class ThermalConductivity:
-    """Process of Thermal Conductivity
+
+class HeatTransfer:
+    """Heat Transfer Process
 
     Parameters
     ----------
     job: inputs.job.Job
        user inputs for this job
-
     """
-    name = "thermal-conductivity"
+    name = "heat-transfer"
 
     def __init__(self, job):
         self.loader = _Loader(job)
         self.mpirank = self.loader.mesh.comm.rank
 
     def run(self):
-        pass
+        ldr = self.loader
+
+        # Fill in the forms.
+
+        coeffs = ldr.problem.coefficients
+        coeffs.orientation.x.array[:] = ldr.orientation_fld.x.array
+        coeffs.stiffness.x.array[:] = ldr.stiffness_fld.x.array
+        coeffs.body_heat.x.array[:] = ldr.body_heat.x.array
+        for fbc in ldr.flux_bcs:
+            coeffs.tractions.append(fbc)
+        a, L = ldr.problem.forms
+
+        # Make temperature BCs.
+
+        default_petsc_options={
+            "ksp_type": "cg",
+            "ksp_rtol": 1e-6,
+            "ksp_atol": 1e-10,
+            "ksp_max_it": 5000,
+            "pc_type": "jacobi",
+        }
+
+        # Set up the linear problem and solve.
+
+        mybcs = ldr.temperature_bcs
+        linprob = LinearProblem(
+            a, L, bcs=mybcs,
+            petsc_options=default_petsc_options
+        )
+
+        with Timer() as t:
+            print("starting linear solver", flush=True)
+            uh = problem.solve()
+            print(f"linear solver time: {t.elapsed()}")
+
+        solver = problem.solver
+        if solver.is_converged:
+            print(f"solver converged: iterations = {solver.its}")
+        else:
+            msg = f"solver divverged: iterations = {solver.its}"
 
 
 class _Loader:
@@ -33,12 +77,12 @@ class _Loader:
         self.job = job
 
         # Material Data
-        self.material_data = material.LinearElasticity(input_mod.material_input)
+        self.material_data = material.HeatTransfer(job.material_input)
 
         # Mesh Data and Function Spaces
         self.mesh_data = mesh.MeshLoader(job.mesh_input)
 
-        self.problem = ThermalConductivityProblem(self.mesh)
+        self.problem = HeatTransferProblem(self.mesh)
         self.V = self.problem.V
         self.T = self.problem.T
 

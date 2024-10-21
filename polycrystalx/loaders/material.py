@@ -1,7 +1,7 @@
 """Material input loader package
 
 So far, all the material inputs are instances of certain material classes,
-so the base class is just a list of instances.
+so the base class is just a list of those instances.
 """
 form polycrystal.thermal.single_crystal import (
     SingleCrystal as ThermalSingleCrystal
@@ -31,7 +31,7 @@ class LinearElasticity:
         self.materials = userinput.materials
 
 
-class ThermalConductivity(MaterialList):
+class HeatTransfer(MaterialList):
 
     def check(self):
         for m in self.materials:

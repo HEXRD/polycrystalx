@@ -1,4 +1,4 @@
-"""Forms for Thermal Conductivity"""
+"""Forms for Heat Transfer"""
 from collections import namedtuple
 from dolfinx import fem
 from ufl import dot, inner, grad, sym, dx, TrialFunction, TestFunction
@@ -8,7 +8,7 @@ from .common import tosample
 
 _coeffs = ["orientation", "stiffness", "body_heat", "fluxes"]
 Coefficients = namedtuple("Coefficients", _coeffs)
-Coefficients.__doc__ = """Coefficients for thermal conductivity forms
+Coefficients.__doc__ = """Coefficients for heat transfer forms
 
 Parameters
 ----------
@@ -18,7 +18,7 @@ stiffness: dolfinx Function
     stiffness matrix field
 body_heat: dolfinx Function
     body heat density field
-fluxes: list of forms.thermal_conductivity.Flux
+fluxes: list of forms.heat_transfer.Flux
     list of applied tractions
 """
 
@@ -35,8 +35,8 @@ ds: Measure
 """
 
 
-class ThermalConductivity:
-    """Thermal Conductivity
+class HeatTransferProblem:
+    """Heat Transfer Forms
 
     This class provides the forms for anisotropic thermal conductivity. The
     forms are initialized with all coefficients being set to zero and fluxes
@@ -58,7 +58,7 @@ class ThermalConductivity:
 
         self.V = fem.functionspace(self.msh, ("CG", 1))
         self.T = fem.functionspace(self.msh, ("DG", 0, (3, 3)))
-        self.V3 = fem.functionspace(self.msh, ("DG", 0, (3,)))
+        self.V3 = fem.functionspace(self.kmsh, ("DG", 0, (3,)))
 
         self._make_coefficients()
 
