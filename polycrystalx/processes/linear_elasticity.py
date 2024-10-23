@@ -37,14 +37,14 @@ class LinearElasticity:
 
     Parameters
     ----------
-    user_input: Job
+    job: input.Job
        user inputs for this job
 
     """
     name = "linear-elasticity"
 
-    def __init__(self, user_input):
-        self.loader = _Loader(user_input)
+    def __init__(self, job):
+        self.loader = _Loader(job)
         self.mpirank = self.loader.mesh.comm.rank
         print("My rank is ", self.mpirank)
 

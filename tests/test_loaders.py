@@ -7,6 +7,7 @@ from polycrystalx import inputs
 from polycrystalx.loaders.mesh import MeshLoader
 from polycrystalx.loaders.function import FunctionLoader
 from polycrystalx.loaders.deformation import LinearElasticity
+from polycrystalx.loaders.deformation import HeatTransfer
 
 
 @pytest.fixture
@@ -25,40 +26,10 @@ def mesh_input():
         celltype="tetrahedron",
     )
 
+
 @pytest.fixture
 def mesh_loader(mesh_input):
     return MeshLoader(mesh_input)
-
-
-def test_mesh(mesh_loader):
-
-    assert mesh_loader.tdim == 3
-    assert mesh_loader.bdim == 2
-
-    bd = mesh_loader.boundary_dict
-    assert (
-        "boundary" in bd
-        and "xmin" in bd and "ymin" in bd and "zmin" in bd
-        and "xmax" in bd and "ymax" in bd and "zmax" in bd
-    )
-
-
-def test_deformation(mesh_loader):
-
-    pd = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-    pdfun = inputs.function.Function(
-        source = "constant",
-        value = pd,
-    )
-    defm_input = inputs.deformation.LinearElasticity(
-        name="test",
-        plastic_distortion=pdfun
-    )
-
-    ldr = LinearElasticity(defm_input)
-    T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
-
-    assert ldr.plastic_distortion(T) is not None
 
 
 def test_function(mesh_loader):
@@ -86,3 +57,54 @@ def test_function(mesh_loader):
         3 * np.ones(len(f_c.x.array)),
     )).T
     assert np.all(f_c2.x.array == result.flatten())
+
+
+def test_mesh(mesh_loader):
+
+    assert mesh_loader.tdim == 3
+    assert mesh_loader.bdim == 2
+
+    bd = mesh_loader.boundary_dict
+    assert (
+        "boundary" in bd
+        and "xmin" in bd and "ymin" in bd and "zmin" in bd
+        and "xmax" in bd and "ymax" in bd and "zmax" in bd
+    )
+
+
+# @pytest.mark.usefixtures(mesh_loader)
+class TestDeformationLoader:
+
+    def test_linear_elasticity(self, mesh_loader):
+
+        pd = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        pdfun = inputs.function.Function(
+            source = "constant",
+            value = pd,
+        )
+        defm_input = inputs.deformation.LinearElasticity(
+            name="test-le",
+            plastic_distortion=pdfun
+        )
+
+        ldr = LinearElasticity(defm_input)
+        T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
+
+        assert ldr.plastic_distortion(T) is not None
+
+
+    def test_heat_transfer(self, mesh_loader):
+
+        bh_fun = inputs.function.Function(
+            source = "constant",
+            value = 2.0,
+        )
+        defm_input = inputs.deformation.HeatTransfer(
+            name="test-ht",
+            body_heat=bh_fun
+        )
+
+        ldr = HeatTransfer(defm_input)
+        V = fem.functionspace(mesh_loader.mesh, ('P', 1))
+
+        assert ldr.body_heat(V) is not None

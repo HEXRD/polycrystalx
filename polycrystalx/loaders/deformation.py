@@ -6,17 +6,21 @@ import ufl
 from ..forms.linear_elasticity import Traction
 from .function import FunctionLoader
 
-class LinearElasticity:
-    """Load deformation input specification
+
+class DefmLoader:
+    """Base class for deformation loaders
 
     Parameters
     ----------
-    userinput: inputs.deformation.LinearElasticity
-       input specification for elastic deformation
+    job: inputs.Job instance
+       input specification
     """
 
-    def __init__(self, userinput):
-        self.userinput = userinput
+    def __init__(self, defm_input):
+        self.defm_input = defm_input
+
+
+class LinearElasticity(DefmLoader):
 
     def displacement_bcs(self, V, bdict):
         """Return list of Dirichlet BCs for this problem
@@ -77,7 +81,7 @@ class LinearElasticity:
         list
            list of traction (natural) boundary conditions
         """
-        if len(self.userinput.traction_bcs) == 0:
+        if len(self.defm_input.traction_bcs) == 0:
             return []
         bdim = V.mesh.topology.dim - 1
         #
@@ -85,7 +89,7 @@ class LinearElasticity:
         # meshtags.
         #
         flist, vlist = [], []
-        for i, tbc in enumerate(self.userinput.traction_bcs):
+        for i, tbc in enumerate(self.defm_input.traction_bcs):
             facets = bdict[tbc.section]
             flist.append(facets)
             vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
@@ -97,7 +101,7 @@ class LinearElasticity:
         # Next, create the array of traction forms.
         #
         tbcs = []
-        for i, tbc in enumerate(self.userinput.traction_bcs):
+        for i, tbc in enumerate(self.defm_input.traction_bcs):
             Vbc = V if tbc.component is None else V.sub(tbc.component)
             ubc = fem.Function(Vbc)
             ubc.interpolate(tbc.value)
@@ -120,8 +124,8 @@ class LinearElasticity:
         dolfinx Function
            body force function as specified
         """
-        if self.userinput.force_density is not None:
-            return FunctionLoader(self.userinput.force_density).load(V)
+        if self.defm_input.force_density is not None:
+            return FunctionLoader(self.defm_input.force_density).load(V)
 
     def plastic_distortion(self, T):
         """Return plastic distortion function
@@ -136,5 +140,18 @@ class LinearElasticity:
         dolfinx Function
            plastic distortion function as specified
         """
-        if self.userinput.plastic_distortion is not None:
-            return FunctionLoader(self.userinput.plastic_distortion).load(T)
+        if self.defm_input.plastic_distortion is not None:
+            return FunctionLoader(self.defm_input.plastic_distortion).load(T)
+
+
+class HeatTransfer(DefmLoader):
+    """Loader for heat transfer inputs"""
+
+    def body_heat(self, V):
+        pass
+
+    def temperature_bcs(self):
+        pass
+
+    def flux_bcs(self):
+        pass
