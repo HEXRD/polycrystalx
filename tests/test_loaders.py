@@ -6,8 +6,7 @@ from dolfinx import fem
 from polycrystalx import inputs
 from polycrystalx.loaders.mesh import MeshLoader
 from polycrystalx.loaders.function import FunctionLoader
-from polycrystalx.loaders.deformation import LinearElasticity
-from polycrystalx.loaders.deformation import HeatTransfer
+from polycrystalx.loaders.deformation import LinearElasticity, HeatTransfer
 
 
 @pytest.fixture
@@ -31,20 +30,26 @@ def mesh_input():
 def mesh_loader(mesh_input):
     return MeshLoader(mesh_input)
 
+@pytest.fixture
+def scalar_function_value():
+    return 1.1
 
-def test_function(mesh_loader):
+@pytest.fixture
+def scalar_function(scalar_function_value):
+    return inputs.function.Function(
+        source="constant",
+        value=scalar_function_value
+    )
+
+def test_function(mesh_loader, scalar_function, scalar_function_value):
     """Test function loader"""
     msh = mesh_loader.mesh
     V = fem.functionspace(msh, ("P", 1))
     V2 = fem.functionspace(msh, ("P", 1, (2,)))
 
     # Check scalar constant
-    inp_c = inputs.function.Function(
-        source="constant",
-        value=(value := 1.1)
-    )
-    f_c = FunctionLoader(inp_c).load(V)
-    assert np.all(f_c.x.array == value)
+    f_c = FunctionLoader(scalar_function).load(V)
+    assert np.all(f_c.x.array == scalar_function_value)
 
     # Check vector constant
     inp_c2 = inputs.function.Function(

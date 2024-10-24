@@ -148,7 +148,20 @@ class HeatTransfer(DefmLoader):
     """Loader for heat transfer inputs"""
 
     def body_heat(self, V):
-        pass
+        """Return body heat density function
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           vector function space for body heat density
+
+        Returns
+        -------
+        dolfinx Function
+           body heat function as specified
+        """
+        if self.defm_input.body_heat is not None:
+            return FunctionLoader(self.defm_input.body_heat).load(V)
 
     def temperature_bcs(self):
         pass
