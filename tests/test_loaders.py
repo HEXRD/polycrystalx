@@ -41,27 +41,35 @@ def scalar_function(scalar_function_value):
         value=scalar_function_value
     )
 
-def test_function(mesh_loader, scalar_function, scalar_function_value):
+@pytest.fixture
+def vector_function_value():
+    return (1., 2, 3)
+
+@pytest.fixture
+def vector_function(vector_function_value):
+    return inputs.function.Function(
+        source="constant",
+        value=vector_function_value
+    )
+
+def test_function(
+        mesh_loader,
+        scalar_function, scalar_function_value,
+        vector_function, vector_function_value
+):
     """Test function loader"""
     msh = mesh_loader.mesh
     V = fem.functionspace(msh, ("P", 1))
-    V2 = fem.functionspace(msh, ("P", 1, (2,)))
+    V3 = fem.functionspace(msh, ("P", 1, (3,)))
 
     # Check scalar constant
     f_c = FunctionLoader(scalar_function).load(V)
     assert np.all(f_c.x.array == scalar_function_value)
 
     # Check vector constant
-    inp_c2 = inputs.function.Function(
-        source="constant",
-        value=(value := (2.0, 3.0))
-    )
-    f_c2 = FunctionLoader(inp_c2).load(V2)
-    result = np.vstack((
-        2 * np.ones(len(f_c.x.array)),
-        3 * np.ones(len(f_c.x.array)),
-    )).T
-    assert np.all(f_c2.x.array == result.flatten())
+    f_cr = FunctionLoader(vector_function).load(V3)
+    arr = f_cr.x.array.reshape((len(f_cr.x.array) // 3, 3))
+    assert np.all(arr == vector_function_value)
 
 
 def test_mesh(mesh_loader):
@@ -95,21 +103,17 @@ class TestDeformationLoader:
         ldr = LinearElasticity(defm_input)
         T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
 
-        assert ldr.plastic_distortion(T) is not None
+        assert isinstance(ldr.plastic_distortion(T), fem.Function)
 
 
-    def test_heat_transfer(self, mesh_loader):
+    def test_heat_transfer(self, mesh_loader, scalar_function):
 
-        bh_fun = inputs.function.Function(
-            source = "constant",
-            value = 2.0,
-        )
         defm_input = inputs.deformation.HeatTransfer(
             name="test-ht",
-            body_heat=bh_fun
+            body_heat=scalar_function
         )
 
         ldr = HeatTransfer(defm_input)
         V = fem.functionspace(mesh_loader.mesh, ('P', 1))
 
-        assert ldr.body_heat(V) is not None
+        assert isinstance(ldr.body_heat(V), fem.Function)
