@@ -185,7 +185,7 @@ class HeatTransfer(DefmLoader):
         """
         bdim = V.mesh.topology.dim - 1
         dbcs = []
-        for dbc in self. defm_input.displacement_bcs:
+        for dbc in self. defm_input.temperature_bcs:
             facets = bdict[dbc.section]
             dofs = fem.locate_dofs_topological(
                 V=V, entity_dim=bdim, entities=facets
@@ -222,11 +222,11 @@ class HeatTransfer(DefmLoader):
         #
         # Next, create the array of traction forms.
         #
-        tbcs = []
-        for i, tbc in enumerate(self.defm_input.traction_bcs):
+        fbcs = []
+        for i, tbc in enumerate(self.defm_input.flux_bcs):
             ubc = fem.Function(V)
             ubc.interpolate(tbc.value)
             t = Flux(ubc, ds(i + 1))
-            tbcs.append(t)
+            fbcs.append(t)
 
-        return tbcs
+        return fbcs

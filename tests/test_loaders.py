@@ -134,34 +134,32 @@ class TestLinearElasticity:
 class TestHeatTransfer:
 
     @pytest.fixture
-    def defm_input(self, vector_function):
-        defm_input = inputs.deformation.LinearElasticity(
+    def boundary_condition(self, scalar_function):
+        return inputs.deformation.BoundaryCondition(
+            section="xmin",
+            value=lambda x: np.ones(x.shape[1]),
+        )
+
+    @pytest.fixture
+    def defm_input(self, scalar_function, boundary_condition):
+        return inputs.deformation.HeatTransfer(
             name="defm-input",
             body_heat=scalar_function,
-            teperature_bcs=[],
-            flux_bcs=[]
+            temperature_bcs=[boundary_condition],
+            flux_bcs=[boundary_condition],
         )
 
-    def test_body_heat(self, mesh_loader, scalar_function):
-
-        defm_input = inputs.deformation.HeatTransfer(
-            name="test-ht",
-            body_heat=scalar_function
-        )
+    def test_body_heat(self, mesh_loader, defm_input):
 
         ldr = HeatTransfer(defm_input)
         V = fem.functionspace(mesh_loader.mesh, ('P', 1))
 
         assert isinstance(ldr.body_heat(V), fem.Function)
 
-    def test_temperature_bcs(self, mesh_loader, scalar_function):
-
-        defm_input = inputs.deformation.HeatTransfer(
-            name="test-ht",
-            body_heat=scalar_function
-        )
+    def test_temperature_bcs(self, mesh_loader, defm_input):
 
         ldr = HeatTransfer(defm_input)
         V = fem.functionspace(mesh_loader.mesh, ('P', 1))
+        bdict = mesh_loader.boundary_dict
 
-        assert isinstance(ldr.body_heat(V), fem.Function)
+        assert isinstance(ldr.temperature_bcs(V, bdict)[0], fem.DirichletBC)
