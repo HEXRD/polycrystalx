@@ -19,6 +19,20 @@ class DefmLoader:
     def __init__(self, defm_input):
         self.defm_input = defm_input
 
+    @staticmethod
+    def boundary_measures(bcs, V, bdict):
+        """Return boundary measures from list of bcs"""
+        bdim = V.mesh.topology.dim - 1
+        flist, vlist = [], []
+        for i, bc in enumerate(bcs):
+            facets = bdict[tbc.section]
+            flist.append(facets)
+            vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
+        mtags = mesh.meshtags(
+            V.mesh, bdim, np.hstack(flist), np.hstack(vlist)
+        )
+        return ufl.Measure("ds", subdomain_data=mtags)
+
 
 class LinearElasticity(DefmLoader):
 
@@ -83,20 +97,11 @@ class LinearElasticity(DefmLoader):
         """
         if len(self.defm_input.traction_bcs) == 0:
             return []
-        bdim = V.mesh.topology.dim - 1
         #
         # First, create the surface measure subdomain data using defined by
         # meshtags.
         #
-        flist, vlist = [], []
-        for i, tbc in enumerate(self.defm_input.traction_bcs):
-            facets = bdict[tbc.section]
-            flist.append(facets)
-            vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
-        mtags = mesh.meshtags(
-            V.mesh, bdim, np.hstack(flist), np.hstack(vlist)
-        )
-        ds = ufl.Measure("ds", subdomain_data=mtags)
+        ds = self.boundary_measures(defm_input.traction_bcs, V, bdict)
         #
         # Next, create the array of traction forms.
         #
@@ -163,8 +168,65 @@ class HeatTransfer(DefmLoader):
         if self.defm_input.body_heat is not None:
             return FunctionLoader(self.defm_input.body_heat).load(V)
 
-    def temperature_bcs(self):
-        pass
+    def temperature_bcs(self, V, bdict):
+        """Return list of Dirichlet BCs for this problem
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           the vector function space
+        bdict: dict
+           the boundary dictionary
+
+        Returns
+        -------
+        list
+           list of temperature (Dirichlet) boundary conditions
+        """
+        bdim = V.mesh.topology.dim - 1
+        dbcs = []
+        for dbc in self. defm_input.displacement_bcs:
+            facets = bdict[dbc.section]
+            dofs = fem.locate_dofs_topological(
+                V=V, entity_dim=bdim, entities=facets
+            )
+            ubc = fem.Function(V)
+            ubc.interpolate(dbc.value)
+            bc = fem.dirichletbc(value=ubc, dofs=dofs)
+            dbcs.append(bc)
+
+        return dbcs
 
     def flux_bcs(self):
-        pass
+        """Return list of flux BCs for this problem
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           the function space
+        bdict: dict
+           the boundary dictionary
+
+        Returns
+        -------
+        list
+           list of flux (natural) boundary conditions
+        """
+        if len(self.defm_input.flux_bcs) == 0:
+            return []
+        #
+        # First, create the surface measure subdomain data using defined by
+        # meshtags.
+        #
+        ds = self.boundary_measures(defm_input.flux_bcs, V, bdict)
+        #
+        # Next, create the array of traction forms.
+        #
+        tbcs = []
+        for i, tbc in enumerate(self.defm_input.traction_bcs):
+            ubc = fem.Function(V)
+            ubc.interpolate(tbc.value)
+            t = Flux(ubc, ds(i + 1))
+            tbcs.append(t)
+
+        return tbcs

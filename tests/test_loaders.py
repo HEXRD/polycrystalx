@@ -6,7 +6,9 @@ from dolfinx import fem
 from polycrystalx import inputs
 from polycrystalx.loaders.mesh import MeshLoader
 from polycrystalx.loaders.function import FunctionLoader
-from polycrystalx.loaders.deformation import LinearElasticity, HeatTransfer
+from polycrystalx.loaders.deformation import (
+    LinearElasticity, HeatTransfer
+)
 
 
 @pytest.fixture
@@ -30,9 +32,11 @@ def mesh_input():
 def mesh_loader(mesh_input):
     return MeshLoader(mesh_input)
 
+
 @pytest.fixture
 def scalar_function_value():
     return 1.1
+
 
 @pytest.fixture
 def scalar_function(scalar_function_value):
@@ -41,9 +45,11 @@ def scalar_function(scalar_function_value):
         value=scalar_function_value
     )
 
+
 @pytest.fixture
 def vector_function_value():
     return (1., 2, 3)
+
 
 @pytest.fixture
 def vector_function(vector_function_value):
@@ -51,6 +57,20 @@ def vector_function(vector_function_value):
         source="constant",
         value=vector_function_value
     )
+
+
+@pytest.fixture
+def tensor_function_value():
+    return (1., 2, 3, 4, 5, 6, 7, 8, 9)
+
+
+@pytest.fixture
+def tensor_function(tensor_function_value):
+    return inputs.function.Function(
+        source="constant",
+        value=tensor_function_value
+    )
+
 
 def test_function(
         mesh_loader,
@@ -85,20 +105,25 @@ def test_mesh(mesh_loader):
     )
 
 
-# @pytest.mark.usefixtures(mesh_loader)
-class TestDeformationLoader:
+class TestLinearElasticity:
 
-    def test_linear_elasticity(self, mesh_loader):
-
-        pd = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-        pdfun = inputs.function.Function(
-            source = "constant",
-            value = pd,
-        )
+    @pytest.fixture
+    def defm_input(self, vector_function, tensor_function):
         defm_input = inputs.deformation.LinearElasticity(
-            name="test-le",
-            plastic_distortion=pdfun
+            name="defm-input",
+            force_density=vector_function,
+            plastic_distortion=tensor_function
         )
+        return defm_input
+
+    def test_force_density(self, mesh_loader, defm_input):
+
+        ldr = LinearElasticity(defm_input)
+        V3 = fem.functionspace(mesh_loader.mesh, ('P', 1, (3,)))
+
+        assert isinstance(ldr.force_density(V3), fem.Function)
+
+    def test_plastic_distortion(self, mesh_loader, defm_input):
 
         ldr = LinearElasticity(defm_input)
         T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
@@ -106,7 +131,30 @@ class TestDeformationLoader:
         assert isinstance(ldr.plastic_distortion(T), fem.Function)
 
 
-    def test_heat_transfer(self, mesh_loader, scalar_function):
+class TestHeatTransfer:
+
+    @pytest.fixture
+    def defm_input(self, vector_function):
+        defm_input = inputs.deformation.LinearElasticity(
+            name="defm-input",
+            body_heat=scalar_function,
+            teperature_bcs=[],
+            flux_bcs=[]
+        )
+
+    def test_body_heat(self, mesh_loader, scalar_function):
+
+        defm_input = inputs.deformation.HeatTransfer(
+            name="test-ht",
+            body_heat=scalar_function
+        )
+
+        ldr = HeatTransfer(defm_input)
+        V = fem.functionspace(mesh_loader.mesh, ('P', 1))
+
+        assert isinstance(ldr.body_heat(V), fem.Function)
+
+    def test_temperature_bcs(self, mesh_loader, scalar_function):
 
         defm_input = inputs.deformation.HeatTransfer(
             name="test-ht",
