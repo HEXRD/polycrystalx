@@ -4,6 +4,7 @@ from dolfinx import fem, mesh
 import ufl
 
 from ..forms.linear_elasticity import Traction
+from ..forms.heat_transfer import Flux
 from .function import FunctionLoader
 
 
@@ -25,7 +26,7 @@ class DefmLoader:
         bdim = V.mesh.topology.dim - 1
         flist, vlist = [], []
         for i, bc in enumerate(bcs):
-            facets = bdict[tbc.section]
+            facets = bdict[bc.section]
             flist.append(facets)
             vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
         mtags = mesh.meshtags(
@@ -197,7 +198,7 @@ class HeatTransfer(DefmLoader):
 
         return dbcs
 
-    def flux_bcs(self):
+    def flux_bcs(self, V, bdict):
         """Return list of flux BCs for this problem
 
         Parameters
@@ -218,15 +219,15 @@ class HeatTransfer(DefmLoader):
         # First, create the surface measure subdomain data using defined by
         # meshtags.
         #
-        ds = self.boundary_measures(defm_input.flux_bcs, V, bdict)
+        ds = self.boundary_measures(self.defm_input.flux_bcs, V, bdict)
         #
         # Next, create the array of traction forms.
         #
         fbcs = []
-        for i, tbc in enumerate(self.defm_input.flux_bcs):
+        for i, fbc in enumerate(self.defm_input.flux_bcs):
             ubc = fem.Function(V)
-            ubc.interpolate(tbc.value)
-            t = Flux(ubc, ds(i + 1))
-            fbcs.append(t)
+            ubc.interpolate(fbc.value)
+            f = Flux(ubc, ds(i + 1))
+            fbcs.append(f)
 
         return fbcs

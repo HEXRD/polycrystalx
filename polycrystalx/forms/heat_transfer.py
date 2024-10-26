@@ -23,7 +23,7 @@ fluxes: list of forms.heat_transfer.Flux
 """
 
 _flux_fields = ["value", "ds"]
-Flux = namedtuple("Flux", _trac_fields)
+Flux = namedtuple("Flux", _flux_fields)
 Flux.__doc__ = """Flux specification
 
 Parameters

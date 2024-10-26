@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 from dolfinx import fem
+import ufl
 
 from polycrystalx import inputs
 from polycrystalx.loaders.mesh import MeshLoader
@@ -163,3 +164,12 @@ class TestHeatTransfer:
         bdict = mesh_loader.boundary_dict
 
         assert isinstance(ldr.temperature_bcs(V, bdict)[0], fem.DirichletBC)
+
+    def test_flux_bcs(self, mesh_loader, defm_input):
+
+        ldr = HeatTransfer(defm_input)
+        V = fem.functionspace(mesh_loader.mesh, ('P', 1))
+        bdict = mesh_loader.boundary_dict
+
+        flux_bc0 = ldr.flux_bcs(V, bdict)[0]
+        assert isinstance(flux_bc0.ds, ufl.Measure)
