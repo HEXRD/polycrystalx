@@ -67,7 +67,13 @@ class HeatTransfer:
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
-            msg = f"solver divverged: iterations = {solver.its}"
+            msg = f"solver diverged: iterations = {solver.its}"
+
+        print("postprocessing ...")
+        with io.XDMFFile(ldr.mesh.comm, "output.xdmf", "w") as file:
+            file.write_mesh(ldr.mesh)
+            file.write_meshtags(ldr.cell_tags, ldr.mesh.geometry)
+            file.write_function(uh)
 
 
 class _Loader:

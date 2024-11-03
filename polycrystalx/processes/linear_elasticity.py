@@ -83,7 +83,7 @@ class LinearElasticity:
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
-            msg = f"solver divverged: iterations = {solver.its}"
+            msg = f"solver diverged: iterations = {solver.its}"
             raise RuntimeError(msg)
 
         print("postprocessing")
