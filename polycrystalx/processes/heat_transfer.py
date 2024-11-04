@@ -37,7 +37,7 @@ class HeatTransfer:
         coeffs.stiffness.x.array[:] = ldr.stiffness_fld.x.array
         coeffs.body_heat.x.array[:] = ldr.body_heat.x.array
         for fbc in ldr.flux_bcs:
-            coeffs.tractions.append(fbc)
+            coeffs.fluxes.append(fbc)
         a, L = ldr.problem.forms
 
         # Make temperature BCs.
