@@ -8,10 +8,7 @@ import pickle
 
 import numpy as np
 
-from polycrystalx import utils
-
-
-RUN_MPI = pathlib.Path(__file__).parent / "run_mpijob.py"
+from . import get_input_module
 
 
 def main():
@@ -19,7 +16,7 @@ def main():
     p = argparser(*sys.argv)
     args = p.parse_args()
 
-    user_module = utils.get_input_module(args.input_module)
+    user_module = get_input_module(args.input_module)
     if not hasattr(user_module, "job_keys"):
         raise AttributeError('module has no "job_keys" attribute')
 
@@ -27,6 +24,7 @@ def main():
     for job in user_module.job_keys:
         # Pickle to a temp file.
         fp = tempfile.NamedTemporaryFile(delete=False)
+
         with open(fp.name, "wb") as f:
             pickle.dump(job, f)
 
@@ -34,9 +32,8 @@ def main():
         # Now run MPI job.
         cmd = [
             "mpirun", "-np", str(args.n),
-            "python", str(RUN_MPI), args.input_module, fp.name
+            "pxx_mpijob", args.input_module, fp.name
         ]
-        print(f"command is: {' '.join(cmd)}")
         subprocess.run(cmd)
         pathlib.Path(fp.name).unlink()
 
@@ -57,10 +54,3 @@ def argparser(*args):
     )
 
     return p
-
-
-if __name__ == "__main__":
-    #
-    #  Run problem
-    #
-    main()

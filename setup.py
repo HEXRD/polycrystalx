@@ -6,7 +6,8 @@ from setuptools import setup, find_packages
 entry_points = {
     'console_scripts': [
         "pxx_job = polycrystalx.scripts.run_job:main",
-        "pxx_suite = polycrystalx.scripts.run_suite:main"
+        "pxx_mpijob = polycrystalx.scripts.run_mpijob:main",
+        "pxx_suite = polycrystalx.scripts.run_suite:main",
     ]
 }
 

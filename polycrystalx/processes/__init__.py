@@ -1,6 +1,8 @@
 """This is the module for defining and executing model processes"""
-from .. import utils
+import os
+
 from .linear_elasticity import LinearElasticity
+from ..utils import setup_output
 
 
 process_dict = {}
@@ -16,6 +18,6 @@ def run(job):
     job: inputs.job.Job
        the job to run
     """
-    utils.setup_output(job.output_directory)
+    setup_output(job.output_directory)
     process = process_dict[job.process](job)
     process.run()
