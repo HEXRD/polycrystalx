@@ -54,7 +54,7 @@ class LinearElasticity(DefmLoader):
         """
         bdim = V.mesh.topology.dim - 1
         dbcs = []
-        for dbc in self. userinput.displacement_bcs:
+        for dbc in self.defm_input.displacement_bcs:
             facets = bdict[dbc.section]
             if dbc.component is None:
                 dofs = fem.locate_dofs_topological(
