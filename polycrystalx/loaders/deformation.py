@@ -186,7 +186,7 @@ class HeatTransfer(DefmLoader):
         """
         bdim = V.mesh.topology.dim - 1
         dbcs = []
-        for dbc in self. defm_input.temperature_bcs:
+        for dbc in self.defm_input.temperature_bcs:
             facets = bdict[dbc.section]
             dofs = fem.locate_dofs_topological(
                 V=V, entity_dim=bdim, entities=facets

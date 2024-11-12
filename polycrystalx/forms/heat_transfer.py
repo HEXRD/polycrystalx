@@ -58,7 +58,7 @@ class HeatTransferProblem:
 
         self.V = fem.functionspace(self.msh, ("CG", 1))
         self.T = fem.functionspace(self.msh, ("DG", 0, (3, 3)))
-        self.V3 = fem.functionspace(self.kmsh, ("DG", 0, (3,)))
+        self.V3 = fem.functionspace(self.msh, ("DG", 0, (3,)))
 
         self._make_coefficients()
 
@@ -85,10 +85,10 @@ class HeatTransferProblem:
 
         # Initialize the linear functional.
 
-        if c.bodyh is None:
+        if c.body_heat is None:
             L = dot(fem.Constant(self.msh, 0), v) * dx
         else:
-            L = c.bodyh * v * dx
+            L = c.body_heat * v * dx
 
         # Add in the boundary fluxes.
 

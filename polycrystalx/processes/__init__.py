@@ -2,11 +2,14 @@
 import os
 
 from .linear_elasticity import LinearElasticity
+from .heat_transfer import HeatTransfer
+
 from ..utils import setup_output
 
 
+processes = (LinearElasticity, HeatTransfer)
 process_dict = {}
-for p in (LinearElasticity,):
+for p in processes:
     process_dict[p.name] = p
 
 

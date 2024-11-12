@@ -3,7 +3,7 @@
 So far, all the material inputs are instances of certain material classes,
 so the base class is just a list of those instances.
 """
-form polycrystal.thermal.single_crystal import (
+from polycrystal.thermal.single_crystal import (
     SingleCrystal as ThermalSingleCrystal
 )
 
@@ -35,5 +35,5 @@ class HeatTransfer(MaterialList):
 
     def check(self):
         for m in self.materials:
-            if not insinstance(m, ThermalSingleCrystal):
+            if not isinstance(m, ThermalSingleCrystal):
                 raise ValueError("material is not a themal SingleCrystal")

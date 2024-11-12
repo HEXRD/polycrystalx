@@ -60,10 +60,10 @@ class HeatTransfer:
 
         with Timer() as t:
             print("starting linear solver", flush=True)
-            uh = problem.solve()
+            uh = linprob.solve()
             print(f"linear solver time: {t.elapsed()}")
 
-        solver = problem.solver
+        solver = linprob.solver
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
