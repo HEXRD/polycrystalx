@@ -11,6 +11,8 @@ from ..loaders import polycrystal
 from ..loaders import deformation
 
 from ..forms.heat_transfer import HeatTransferProblem
+from ..forms.common import grain_volume, grain_integral
+from ..utils import grain_volumes, grain_integrals
 
 
 class HeatTransfer:
@@ -70,10 +72,37 @@ class HeatTransfer:
             msg = f"solver diverged: iterations = {solver.its}"
 
         print("postprocessing ...")
+        self.postprocess(uh, ldr)
+
+    def postprocess(self, uh, ldr):
+        """Write primary variables and compute grain averaged values"""
         with io.XDMFFile(ldr.mesh.comm, "output.xdmf", "w") as file:
             file.write_mesh(ldr.mesh)
             file.write_meshtags(ldr.cell_tags, ldr.mesh.geometry)
             file.write_function(uh)
+
+        # Now compute grain volumes.
+        gv_form, indic = grain_volume(ldr.mesh)
+        g_volumes = grain_volumes(
+            ldr.mesh.comm, gv_form, indic, ldr.grain_cells
+        )
+
+        # Next, compute grain integrals and grain-averaged values.
+        indmap = ldr.mesh.topology.index_map(ldr.mesh.topology.dim)
+        allcells = np.arange(indmap.size_local).astype(np.int32)
+
+        gi_form, indicator, func = grain_integral(ldr.mesh, ldr.V)
+
+        temp_ints = grain_integrals(
+            ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells, uh
+        )
+        if self.mpirank == 0:
+            temp_avg = np.zeros_like(temp_ints)
+            nz = g_volumes > 0.
+            nnz = np.count_nonzero(g_volumes > 0)
+            temp_avg[nz] = temp_ints[nz]/g_volumes[nz].reshape(nnz)
+            np.savez("grain-averages.npz", volume=g_volumes,
+                     temperature=temp_avg)
 
 
 class _Loader:
