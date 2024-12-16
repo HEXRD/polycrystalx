@@ -4,6 +4,7 @@ from dolfinx import fem, log, io
 from dolfinx.common import Timer
 from dolfinx.fem.petsc import LinearProblem
 from mpi4py import MPI
+import ufl
 
 from ..loaders import mesh
 from ..loaders import material
@@ -76,33 +77,68 @@ class HeatTransfer:
 
     def postprocess(self, uh, ldr):
         """Write primary variables and compute grain averaged values"""
+        # Compute flux field first.
+        flux_form = ufl.grad(uh)
+        flux_expr = fem.Expression(
+            flux_form, ldr.V3.element.interpolation_points()
+        )
+        flux_fun = fem.Function(ldr.V3, name="flux")
+        flux_fun.interpolate(flux_expr)
+
         with io.XDMFFile(ldr.mesh.comm, "output.xdmf", "w") as file:
             file.write_mesh(ldr.mesh)
             file.write_meshtags(ldr.cell_tags, ldr.mesh.geometry)
             file.write_function(uh)
+            file.write_function(flux_fun)
 
         # Now compute grain volumes.
         gv_form, indic = grain_volume(ldr.mesh)
         g_volumes = grain_volumes(
             ldr.mesh.comm, gv_form, indic, ldr.grain_cells
         )
+        num_grains = len(g_volumes)
 
         # Next, compute grain integrals and grain-averaged values.
         indmap = ldr.mesh.topology.index_map(ldr.mesh.topology.dim)
         allcells = np.arange(indmap.size_local).astype(np.int32)
 
+        # Integrate temperatures.
         gi_form, indicator, func = grain_integral(ldr.mesh, ldr.V)
 
         temp_ints = grain_integrals(
             ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells, uh
         )
+
+        # Integrate fluxes.
+        V = fem.functionspace(ldr.mesh, ("DG", 0))
+        gi_form, indicator, func = grain_integral(ldr.mesh, V)
+
+        flux_ints = np.zeros((num_grains, 3))
+        flux_i = fem.Function(V)
+
+        for i in range(3):
+            flux_i_expr = fem.Expression(
+                flux_fun[i], V.element.interpolation_points()
+            )
+            flux_i.interpolate(flux_i_expr, allcells)
+
+            flux_ints[:, i] = grain_integrals(
+                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
+                flux_i
+            )
+
         if self.mpirank == 0:
-            temp_avg = np.zeros_like(temp_ints)
             nz = g_volumes > 0.
             nnz = np.count_nonzero(g_volumes > 0)
-            temp_avg[nz] = temp_ints[nz]/g_volumes[nz].reshape(nnz)
+            gvnnz = g_volumes[nz].reshape(nnz)
+
+            temp_avg = np.zeros_like(temp_ints)
+            temp_avg[nz] = temp_ints[nz] / gvnnz
+
+            flux_avg = np.zeros((num_grains, 3))
+            flux_avg[nz] = flux_ints[nz] / gvnnz.reshape(nnz, 1)
             np.savez("grain-averages.npz", volume=g_volumes,
-                     temperature=temp_avg)
+                     temperature=temp_avg, flux=flux_avg)
 
 
 class _Loader:
@@ -119,6 +155,7 @@ class _Loader:
 
         self.problem = HeatTransferProblem(self.mesh)
         self.V = self.problem.V
+        self.V3 = self.problem.V3
         self.T = self.problem.T
 
         # Microstructure Data

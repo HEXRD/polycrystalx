@@ -3,7 +3,7 @@
 So far, all the material inputs are instances of certain material classes,
 so the base class is just a list of those instances.
 """
-from polycrystal.thermal.single_crystal import (
+from polycrystal.heat_transfer.single_crystal import (
     SingleCrystal as ThermalSingleCrystal
 )
 
