@@ -45,7 +45,7 @@ class HeatTransfer:
 
         # Make temperature BCs.
 
-        default_petsc_options={
+        default_petsc_options = {
             "ksp_type": "cg",
             "ksp_rtol": 1e-6,
             "ksp_atol": 1e-10,
@@ -192,7 +192,7 @@ class _Loader:
         return self._stiffness_fld
 
     def _make_stiffness_fld(self):
-        stf_fld= fem.Function(self.T)
+        stf_fld = fem.Function(self.T)
         ms = self.polycrystal_data.polycrystal
         for gi in range(ms.num_grains):
             phase = int(ms.phase(np.array([gi])))
@@ -200,7 +200,7 @@ class _Loader:
             cells = self.grain_cells[gi]
             stf = matl.conductivity
             stf_fld.interpolate(
-                lambda x: np.tile(stf.reshape(9,1), x.shape[1]), cells
+                lambda x: np.tile(stf.reshape(9, 1), x.shape[1]), cells
             )
         return stf_fld
 
