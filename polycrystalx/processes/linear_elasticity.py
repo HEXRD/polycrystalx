@@ -37,14 +37,14 @@ class LinearElasticity:
 
     Parameters
     ----------
-    user_input: Job
+    job: input.Job
        user inputs for this job
 
     """
     name = "linear-elasticity"
 
-    def __init__(self, user_input):
-        self.loader = _Loader(user_input)
+    def __init__(self, job):
+        self.loader = _Loader(job)
         self.mpirank = self.loader.mesh.comm.rank
         print("My rank is ", self.mpirank)
 
@@ -83,7 +83,7 @@ class LinearElasticity:
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
-            msg = f"solver divverged: iterations = {solver.its}"
+            msg = f"solver diverged: iterations = {solver.its}"
             raise RuntimeError(msg)
 
         print("postprocessing")

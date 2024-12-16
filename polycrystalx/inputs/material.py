@@ -1,16 +1,23 @@
-"""Material input templates"""
+"""Material input templates
+
+Currently these are the same format for all processes: the name of the material
+list and a list of instances of the appropriate material
+"""
 from collections import namedtuple
 
 
-LinearElasticity = namedtuple(
-    "LinearElasticity", ["name", "materials"]
+MaterialList = namedtuple(
+    "MaterialLisst", ["name", "materials"]
 )
-LinearElasticity.__doc__ = """Material input for Elasticity
+MaterialList.__doc__ = """List of Materials
 
 Parameters
 ----------
 name: str
-    name of material
+    name of material list
 materials: list
-    list of elastic single crystal instances
+    list of material instances
 """
+
+LinearElasticity = MaterialList
+HeatTransfer = MaterialList

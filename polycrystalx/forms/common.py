@@ -65,7 +65,7 @@ def tocrystal(w3x3, orient):
     Expression:
        expression for `w3x3` in crystal coordinates
     """
-    return orient.T*w3x3*orient
+    return orient.T * w3x3 * orient
 
 
 def tosample(w3x3, orient):
@@ -83,7 +83,7 @@ def tosample(w3x3, orient):
     Expression:
        expression for `w3x3` in sample coordinates
     """
-    return orient*w3x3*orient.T
+    return orient * w3x3 * orient.T
 
 
 # Following are stress forms for sample and crystal reference frames.

@@ -4,19 +4,38 @@ from dolfinx import fem, mesh
 import ufl
 
 from ..forms.linear_elasticity import Traction
+from ..forms.heat_transfer import Flux
 from .function import FunctionLoader
 
-class LinearElasticity:
-    """Load deformation input specification
+
+class DefmLoader:
+    """Base class for deformation loaders
 
     Parameters
     ----------
-    userinput: inputs.deformation.LinearElasticity
-       input specification for elastic deformation
+    job: inputs.Job instance
+       input specification
     """
 
-    def __init__(self, userinput):
-        self.userinput = userinput
+    def __init__(self, defm_input):
+        self.defm_input = defm_input
+
+    @staticmethod
+    def boundary_measures(bcs, V, bdict):
+        """Return boundary measures from list of bcs"""
+        bdim = V.mesh.topology.dim - 1
+        flist, vlist = [], []
+        for i, bc in enumerate(bcs):
+            facets = bdict[bc.section]
+            flist.append(facets)
+            vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
+        mtags = mesh.meshtags(
+            V.mesh, bdim, np.hstack(flist), np.hstack(vlist)
+        )
+        return ufl.Measure("ds", subdomain_data=mtags)
+
+
+class LinearElasticity(DefmLoader):
 
     def displacement_bcs(self, V, bdict):
         """Return list of Dirichlet BCs for this problem
@@ -35,7 +54,7 @@ class LinearElasticity:
         """
         bdim = V.mesh.topology.dim - 1
         dbcs = []
-        for dbc in self. userinput.displacement_bcs:
+        for dbc in self.defm_input.displacement_bcs:
             facets = bdict[dbc.section]
             if dbc.component is None:
                 dofs = fem.locate_dofs_topological(
@@ -77,27 +96,18 @@ class LinearElasticity:
         list
            list of traction (natural) boundary conditions
         """
-        if len(self.userinput.traction_bcs) == 0:
+        if len(self.defm_input.traction_bcs) == 0:
             return []
-        bdim = V.mesh.topology.dim - 1
         #
         # First, create the surface measure subdomain data using defined by
         # meshtags.
         #
-        flist, vlist = [], []
-        for i, tbc in enumerate(self.userinput.traction_bcs):
-            facets = bdict[tbc.section]
-            flist.append(facets)
-            vlist.append((i + 1) * np.ones(len(facets), dtype=np.int32))
-        mtags = mesh.meshtags(
-            V.mesh, bdim, np.hstack(flist), np.hstack(vlist)
-        )
-        ds = ufl.Measure("ds", subdomain_data=mtags)
+        ds = self.boundary_measures(defm_input.traction_bcs, V, bdict)
         #
         # Next, create the array of traction forms.
         #
         tbcs = []
-        for i, tbc in enumerate(self.userinput.traction_bcs):
+        for i, tbc in enumerate(self.defm_input.traction_bcs):
             Vbc = V if tbc.component is None else V.sub(tbc.component)
             ubc = fem.Function(Vbc)
             ubc.interpolate(tbc.value)
@@ -120,8 +130,8 @@ class LinearElasticity:
         dolfinx Function
            body force function as specified
         """
-        if self.userinput.force_density is not None:
-            return FunctionLoader(self.userinput.force_density).load(V)
+        if self.defm_input.force_density is not None:
+            return FunctionLoader(self.defm_input.force_density).load(V)
 
     def plastic_distortion(self, T):
         """Return plastic distortion function
@@ -136,5 +146,88 @@ class LinearElasticity:
         dolfinx Function
            plastic distortion function as specified
         """
-        if self.userinput.plastic_distortion is not None:
-            return FunctionLoader(self.userinput.plastic_distortion).load(T)
+        if self.defm_input.plastic_distortion is not None:
+            return FunctionLoader(self.defm_input.plastic_distortion).load(T)
+
+
+class HeatTransfer(DefmLoader):
+    """Loader for heat transfer inputs"""
+
+    def body_heat(self, V):
+        """Return body heat density function
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           vector function space for body heat density
+
+        Returns
+        -------
+        dolfinx Function
+           body heat function as specified
+        """
+        if self.defm_input.body_heat is not None:
+            return FunctionLoader(self.defm_input.body_heat).load(V)
+
+    def temperature_bcs(self, V, bdict):
+        """Return list of Dirichlet BCs for this problem
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           the vector function space
+        bdict: dict
+           the boundary dictionary
+
+        Returns
+        -------
+        list
+           list of temperature (Dirichlet) boundary conditions
+        """
+        bdim = V.mesh.topology.dim - 1
+        dbcs = []
+        for dbc in self.defm_input.temperature_bcs:
+            facets = bdict[dbc.section]
+            dofs = fem.locate_dofs_topological(
+                V=V, entity_dim=bdim, entities=facets
+            )
+            ubc = fem.Function(V)
+            ubc.interpolate(dbc.value)
+            bc = fem.dirichletbc(value=ubc, dofs=dofs)
+            dbcs.append(bc)
+
+        return dbcs
+
+    def flux_bcs(self, V, bdict):
+        """Return list of flux BCs for this problem
+
+        Parameters
+        ----------
+        V: dolfinx FunctionSpace
+           the function space
+        bdict: dict
+           the boundary dictionary
+
+        Returns
+        -------
+        list
+           list of flux (natural) boundary conditions
+        """
+        if len(self.defm_input.flux_bcs) == 0:
+            return []
+        #
+        # First, create the surface measure subdomain data using defined by
+        # meshtags.
+        #
+        ds = self.boundary_measures(self.defm_input.flux_bcs, V, bdict)
+        #
+        # Next, create the array of traction forms.
+        #
+        fbcs = []
+        for i, fbc in enumerate(self.defm_input.flux_bcs):
+            ubc = fem.Function(V)
+            ubc.interpolate(fbc.value)
+            f = Flux(ubc, ds(i + 1))
+            fbcs.append(f)
+
+        return fbcs
