@@ -147,6 +147,31 @@ def sigs_3x3(w_s, stiff_c, orient):
     return tosample(sigc_3x3(w_s, stiff_c, orient), orient)
 
 
+def sigs_thermal(epsc_3x3_th, stiff_c, orient):
+    """Thermal stress in sample frame
+
+    Parameters
+    ----------
+    epsc_3x3_th: Expression
+       3x3 thermal strain field in crystal frame
+    stiff_c: Expression
+       stiffness matrix in crystal frame
+    orient: Expression
+       3X3 rotation matrix for change of basis
+
+    Returns
+    -------
+     Expression:
+       expression for stress as 3x3 matrix in sample frame
+    """
+    epsc_6_th = to6vector(epsc_3x3_th)
+    sigc_6_th = dot(stiff_c, epsc_6_th)
+    sigc_3x3_th = totensor(sigc_6_th)
+    sigs_3x3_th = tosample(sigc_3x3_th, orient)
+
+    return sigs_3x3_th
+
+
 # Here are two forms for integration over grains.
 
 def grain_volume(msh):

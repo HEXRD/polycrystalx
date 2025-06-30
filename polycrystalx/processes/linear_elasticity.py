@@ -16,7 +16,7 @@ from ..loaders import mesh
 from ..loaders import material
 from ..loaders import polycrystal
 from ..loaders import deformation
-from ..forms.common import sigs_3x3, grain_volume, grain_integral
+from ..forms.common import sigs_3x3, sigs_thermal, grain_volume, grain_integral
 from ..forms.linear_elasticity import (
     LinearElasticity as LinearElasticityProblem
 )
@@ -61,6 +61,7 @@ class LinearElasticity:
         cstiff = ldr.stiffness_fld
         coeffs.stiffness.x.array[:] = cstiff.x.array
         coeffs.body_force.x.array[:] = ldr.force_density.x.array
+        coeffs.thermal_expansion.x.array[:] = ldr.thermal_expansion.x.array
         for tbc in ldr.traction_bcs:
             coeffs.tractions.append(tbc)
         a, L = ldr.problem.forms
@@ -105,7 +106,13 @@ class LinearElasticity:
         strain = fem.Function(ldr.T, name="strain")
         strain.interpolate(strain_expr)
 
+        texp = ldr.problem.coefficients.thermal_expansion
+
         stress_form = sigs_3x3(uh, ldr.stiffness_fld, ldr.orientation_fld)
+        if texp is not None:
+            stress_form -= sigs_thermal(
+                texp, ldr.stiffness_fld, ldr.orientation_fld
+            )
         stress_expr = fem.Expression(
             stress_form, ldr.T.element.interpolation_points()
         )
@@ -118,6 +125,9 @@ class LinearElasticity:
             file.write_function(uh)
             file.write_function(strain)
             file.write_function(stress)
+            if texp is not None:
+                texp.name = "thermal_expansion"
+                file.write_function(texp)
 
         # Compute grain volumes.
 
@@ -144,55 +154,22 @@ class LinearElasticity:
         eps_fun = fem.Function(V)
 
         with Timer() as t:
-            eps_expr = fem.Expression(
-                strain[0, 0], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 0] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
-            eps_expr = fem.Expression(
-                strain[1, 1], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 1] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
-            eps_expr = fem.Expression(
-                strain[2, 2], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 2] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
-            eps_expr = fem.Expression(
-                strain[1, 2], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 3] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
-            eps_expr = fem.Expression(
-                strain[0, 2], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 4] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
-            eps_expr = fem.Expression(
-                strain[0, 1], V.element.interpolation_points()
-            )
-            eps_fun.interpolate(eps_expr, allcells)
-            eps_int[:, 5] = grain_integrals(
-                ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
-                eps_fun
-            )
+            indmap = {
+                0: (0, 0), 1: (1, 1), 2: (2, 2),
+                3: (1, 2), 4: (0, 2), 5: (0, 1)
+            }
+            for i in range(6):
+                j0, j1 = indmap[i]
+                eps_expr = fem.Expression(
+                    strain[j0, j1], V.element.interpolation_points()
+                )
+                eps_fun.interpolate(eps_expr, allcells)
+                eps_int[:, i] = grain_integrals(
+                    ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
+                    eps_fun
+                )
             elapsed = t.elapsed()
+
         if self.mpirank == 0:
             print(f"time for grain integrals calculation: {elapsed}")
 
@@ -246,6 +223,14 @@ class LinearElasticity:
         stress.attrib[NAME] = "stress"
         meshgrid.append(stress)
 
+        try:
+            texp = domain[5][0].find(ATTR)
+            texp.attrib[NAME] = "thermal_expansion"
+            meshgrid.append(texp)
+            domain.remove(domain[5])
+        except:
+            pass
+
         domain.remove(domain[4])
         domain.remove(domain[3])
         domain.remove(domain[2])
@@ -298,6 +283,9 @@ class _Loader:
         )
         self.force_density = self.deformation_data.force_density(self.V)
 
+        self.thermal_expansion = self.deformation_data.thermal_expansion(
+            self.T
+        )
         self.plastic_distortion = self.deformation_data.plastic_distortion(
             self.T
         )

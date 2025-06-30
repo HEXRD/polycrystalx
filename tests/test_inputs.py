@@ -28,6 +28,7 @@ class TestDeformationInputs:
         assert defm_input.name == "test"
         assert defm_input.force_density is None
         assert defm_input.plastic_distortion is None
+        assert defm_input.thermal_expansion is None
         assert defm_input.displacement_bcs == []
         assert defm_input.traction_bcs == []
 

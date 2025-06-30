@@ -139,7 +139,7 @@ class LinearElasticity(DefmLoader):
         Parameters
         ----------
         T: dolfinx FunctionSpace
-           tensor function space for force density
+           tensor function space for plastic distortion
 
         Returns
         -------
@@ -148,6 +148,22 @@ class LinearElasticity(DefmLoader):
         """
         if self.defm_input.plastic_distortion is not None:
             return FunctionLoader(self.defm_input.plastic_distortion).load(T)
+
+    def thermal_expansion(self, T):
+        """Return thermal expansion function
+
+        Parameters
+        ----------
+        T: dolfinx FunctionSpace
+           tensor function space for thermal expansion
+
+        Returns
+        -------
+        dolfinx Function
+           thermal expansion function as specified
+        """
+        if self.defm_input.thermal_expansion is not None:
+            return FunctionLoader(self.defm_input.thermal_expansion).load(T)
 
 
 class HeatTransfer(DefmLoader):
