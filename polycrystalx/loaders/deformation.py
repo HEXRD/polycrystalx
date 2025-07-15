@@ -102,7 +102,7 @@ class LinearElasticity(DefmLoader):
         # First, create the surface measure subdomain data using defined by
         # meshtags.
         #
-        ds = self.boundary_measures(defm_input.traction_bcs, V, bdict)
+        ds = self.boundary_measures(self.defm_input.traction_bcs, V, bdict)
         #
         # Next, create the array of traction forms.
         #
