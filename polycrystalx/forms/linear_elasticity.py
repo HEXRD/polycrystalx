@@ -7,7 +7,7 @@ from ufl import dot, inner, grad, sym, dx, TrialFunction, TestFunction
 
 
 _coeffs = ["orientation", "stiffness", "body_force", "plastic_distortion",
-           "tractions"]
+           "thermal_expansion", "tractions"]
 Coefficients = namedtuple("Coefficients", _coeffs)
 Coefficients.__doc__ = """Coefficients for linear elasticty forms
 
@@ -21,7 +21,9 @@ body_force: dolfinx Function
     body force density field
 plastic_distortion: dolfinx Function
     plastic distortion tensor field
-tractions: list of forms.linear_elasticity.Traction
+thermal_expansion: dolfinx Function
+    function giving thermal expansion
+tractions: list of forms.linear_elasticity.Traction instances
     list of applied tractions
 """
 
@@ -73,8 +75,9 @@ class LinearElasticity:
         stiff = fem.Function(self.T6)
         bodyf = fem.Function(self.V)
         pdist = fem.Function(self.T)
+        texpand = fem.Function(self.T)
         tracs = []
-        self._coeffs = Coefficients(orient, stiff, bodyf, pdist, tracs)
+        self._coeffs = Coefficients(orient, stiff, bodyf, pdist, texpand, tracs)
 
     @property
     def coefficients(self):
@@ -102,6 +105,15 @@ class LinearElasticity:
             )
             L += inner(Cbeta_form, sym(grad(v))) * dx
 
+        if c.thermal_expansion is not None:
+            # This is just like the plastic distortion, but the thermal
+            # expansion tensor is in the crystal frame.
+
+            te_form = self._expansion_form(
+                c.thermal_expansion,  c.stiffness, c.orientation
+            )
+            L += inner(te_form, sym(grad(v))) * dx
+
         # Add in the tractions.
         for trac in c.tractions:
             if trac.component is None:
@@ -118,7 +130,7 @@ class LinearElasticity:
     def _C_beta_s_form(beta_s_3x3, stiff_c, orient):
         """apply stiffness to a tensor field
 
-        beta_s - the tensor field in sample frame (in sample frame)
+        beta_s - the tensor field in sample frame
         stiff_c - the stiffness matrix (in crystal frame)
 
         RETURNS
@@ -134,3 +146,24 @@ class LinearElasticity:
         Cbeta_s_3x3 = tosample(Cbeta_c_3x3, orient)
 
         return Cbeta_s_3x3
+
+    @staticmethod
+    def _expansion_form(expand_c_3x3, stiff_c, orient):
+        """apply stiffness to a tensor field
+
+        expand_c_3x3 - the expanion tensor field in crystal frame
+        stiff_c - the stiffness matrix (in crystal frame)
+        orient - the orientation field
+
+        RETURNS
+
+        expand_s_3x3 - form for the stiffness times the tensor field (in sample
+                       frame)
+        """
+        # Note that the stiffness matrix operates only on symmetric matrices.
+        expand_c_6 = to6vector(expand_c_3x3)
+        stiff_expand_c_6 = dot(stiff_c, expand_c_6)
+        stiff_expand_c_3x3 = totensor(stiff_expand_c_6)
+        stiff_expand_s_3x3 = tosample(stiff_expand_c_3x3, orient)
+
+        return stiff_expand_s_3x3

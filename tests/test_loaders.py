@@ -113,7 +113,8 @@ class TestLinearElasticity:
         defm_input = inputs.deformation.LinearElasticity(
             name="defm-input",
             force_density=vector_function,
-            plastic_distortion=tensor_function
+            plastic_distortion=tensor_function,
+            thermal_expansion=tensor_function,
         )
         return defm_input
 
@@ -130,6 +131,13 @@ class TestLinearElasticity:
         T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
 
         assert isinstance(ldr.plastic_distortion(T), fem.Function)
+
+    def test_thermal_expansion(self, mesh_loader, defm_input):
+
+        ldr = LinearElasticity(defm_input)
+        T = fem.functionspace(mesh_loader.mesh, ('DG', 0, (3, 3)))
+
+        assert isinstance(ldr.thermal_expansion(T), fem.Function)
 
 
 class TestHeatTransfer:
