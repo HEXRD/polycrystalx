@@ -61,7 +61,8 @@ class LinearElasticity:
         cstiff = ldr.stiffness_fld
         coeffs.stiffness.x.array[:] = cstiff.x.array
         coeffs.body_force.x.array[:] = ldr.force_density.x.array
-        coeffs.thermal_expansion.x.array[:] = ldr.thermal_expansion.x.array
+        if (_texp := ldr.thermal_expansion) is not None:
+            coeffs.thermal_expansion.x.array[:] = _texp.x.array
         for tbc in ldr.traction_bcs:
             coeffs.tractions.append(tbc)
         a, L = ldr.problem.forms
