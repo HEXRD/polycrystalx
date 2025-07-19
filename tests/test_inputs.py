@@ -5,18 +5,37 @@ import pytest
 from polycrystalx import inputs
 
 
-def test_mesh_inputs():
+class TestMeshInputs:
 
-    mesh_input = inputs.mesh.Mesh(
-        name='test',
-        source="box",
-    )
+    def test_check_inputs(self):
 
-    assert mesh_input.extents is None
-    assert mesh_input.divisions is None
-    assert mesh_input.celltype is None
-    assert mesh_input.file is None
-    assert mesh_input.boundary_sections == []
+        with pytest.raises(RuntimeError, match="no valid"):
+            inp = inputs.mesh.Mesh(
+                name='test',
+                source="none",
+            )
+
+        with pytest.raises(RuntimeError, match='For "box" mesh, you must also'):
+            inp = inputs.mesh.Mesh(
+                name='test',
+                source="box",
+            )
+
+        with pytest.raises(RuntimeError, match='For "gmsh" mesh, you must also'):
+            inp = inputs.mesh.Mesh(
+                name='test',
+                source="gmsh",
+            )
+
+
+        with pytest.raises(RuntimeError, match='For "xdmf" mesh, you must also'):
+            inp = inputs.mesh.Mesh(
+                name='test',
+                source="xdmf",
+            )
+
+
+
 
 
 class TestDeformationInputs:
