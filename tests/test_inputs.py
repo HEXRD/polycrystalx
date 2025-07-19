@@ -1,5 +1,6 @@
 """Tests for inputs"""
 import numpy as np
+import pytest
 
 from polycrystalx import inputs
 
@@ -41,3 +42,20 @@ class TestDeformationInputs:
         assert defm_input.body_heat is None
         assert defm_input.temperature_bcs == []
         assert defm_input.flux_bcs == []
+
+
+class TestFunctionInputs:
+
+    def test_check_inputs(self):
+
+        with pytest.raises(RuntimeError, match="constant function"):
+            inp = inputs.function.Function(source="constant")
+
+        with pytest.raises(RuntimeError, match="interpolated function"):
+            inp = inputs.function.Function(source="interpolation")
+
+        with pytest.raises(RuntimeError, match="function from XDMF"):
+            inp = inputs.function.Function(source="xdmf")
+
+        with pytest.raises(RuntimeError, match='no valid'):
+            inp = inputs.function.Function(source="something-else")

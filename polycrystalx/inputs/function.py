@@ -39,7 +39,6 @@ class Function(_Function):
 
     def check_inputs(self):
 
-        print("source: ", self.source)
         if self.source == "constant":
             if self.value is None:
                 emsg = '"value" keyword not specified for constant function"'
@@ -48,13 +47,13 @@ class Function(_Function):
             if self.function is None:
                 emsg = '"function" keyword not specified for interpolated function'
                 raise RuntimeError(emsg)
-        elif self.source == "xdfm":
+        elif self.source == "xdmf":
             if (self.file is None) or (self.name is None):
                 emsg = '"file" and "name" must both be specified for function from XDMF'
                 raise RuntimeError(emsg)
         else:
             msg = (
                 'no valid "source" type was found: '
-                '"source" must one of "constant" | "interpolation" | "xdmf"'
+                '"source" must be one of "constant" | "interpolation" | "xdmf"'
             )
             raise RuntimeError(msg)
