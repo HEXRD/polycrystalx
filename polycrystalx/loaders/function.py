@@ -37,20 +37,35 @@ class FunctionLoader:
         elif self.source == "xdmf":
             f = self._load_xdmf(f, V.mesh)
             f.name = name
+        else:
+            msg = (
+                'no valid "source" type was found: '
+                '"source" must "constant" | "interpolation" | "xdmf"'
+            )
+            raise RuntimeError(msg)
         return f
 
     def _load_constant(self, f):
+        if self.userinput.value is None:
+            raise RuntimeError("value not specified for constant function")
         value = self.userinput.value
         f_interp = lambda x: np.tile(value, (x.shape[1], 1)).T
         f.interpolate(f_interp)
 
     def _load_interpolate(self, f):
+        if self.userinput.function is None:
+            msg = '"function" key not specified for  function'
+            raise RuntimeError()
         f_interp = self.userinput.function
         f.interpolate(f_interp)
 
     def _load_xdmf(self, f, msh):
         filename = self.userinput.file
         funcname = self.userinput.name
+        if (filename is None) or (funcname is None):
+            msg = '"filename" and "funcname" must both be specified'
+            raise RuntimeError(msg)
+
         with XDMFFile_Ext(msh.comm, filename, "r") as xfile:
             f = xfile.read_function(msh, funcname)
 
