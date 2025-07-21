@@ -32,11 +32,18 @@ def get_job(key):
 
 # Next, we set up the iterator for job keys.
 
-matl_keys = matl_dict.keys()
+all_matl_keys = matl_dict.keys()
+matl_keys = ("identity-iso",)
 poly_keys = [(0, 0)]
 mesh_keys = ((10, 20, 30),)
-defm_keys = itertools.product(
+all_defm_keys = itertools.product(
     ("full", "zmax-traction", "zmax-traction-z", "zmax-traction-xy"),
     range(3), range(3)
 )
-job_keys = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+
+identity_all_bcs = itertools.product(matl_keys, [(0, 0)], [(10, 20, 30)], all_defm_keys)
+all_matls_full_bcs = itertools.product(
+    all_matl_keys, [(0, 0)], [(20, 20, 20)], [("full", 0, 0)]
+)
+
+job_keys = itertools.chain(identity_all_bcs, all_matls_full_bcs)
