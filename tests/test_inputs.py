@@ -35,9 +35,6 @@ class TestMeshInputs:
             )
 
 
-
-
-
 class TestDeformationInputs:
 
     def test_linear_elasticity(self):
