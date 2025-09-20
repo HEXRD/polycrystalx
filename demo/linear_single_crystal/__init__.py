@@ -1,14 +1,23 @@
 """Inputs Module for lienar single crystal"""
-import numpy as np
 
-from polycrystalx import inputs
+from . import batch
 
-from .batch import suite, process, get_job
+# Material has identity for stiffness matrix.
+matl_key = "identity-iso"
 
+# Single crystal with no rotation.
+poly_key = (0, 0)
 
-matl = "identity-iso"
-poly = (0, 0)
-mesh = (20, 20, 20)
-defm = ("full", 1, 1)
+# Mesh is a box with 40 divisions in each directon.
+mesh_key = (40, 40, 40)
 
-job = get_job((matl, poly, mesh, defm))
+# The applied deformation is a traction on the top and a displacement field
+# u = Ax where
+#     [1 0 0]
+# A = [0 0 0]
+#     [0 0 0]
+defm_key = ("zmax-traction", 1, 1)
+
+job_key = (matl_key, poly_key, mesh_key, defm_key)
+
+job = batch.get_job(job_key)
