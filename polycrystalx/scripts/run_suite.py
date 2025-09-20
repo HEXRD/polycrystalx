@@ -15,13 +15,14 @@ def main():
     """run a suite of jobs"""
     p = argparser(*sys.argv)
     args = p.parse_args()
+    print("job keys: ", args.keys)
 
     user_module = get_input_module(args.input_module)
-    if not hasattr(user_module, "job_keys"):
-        raise AttributeError('module has no "job_keys" attribute')
+    if not hasattr(user_module, args.keys):
+        emsg = f"job keys attribute '{args.keys}' was not found"
+        raise AttributeError(emsg)
 
-
-    for job in user_module.job_keys:
+    for job in getattr(user_module, args.keys):
         # Pickle to a temp file.
         fp = tempfile.NamedTemporaryFile(delete=False)
 
@@ -29,6 +30,7 @@ def main():
             pickle.dump(job, f)
 
         print("\n===== New Job Starting", flush=True)
+
         # Now run MPI job.
         cmd = [
             "mpirun", "-np", str(args.n),
@@ -51,6 +53,11 @@ def argparser(*args):
         '-n', type=int,
         default=2,
         help="number of processes"
+    )
+    p.add_argument(
+        '-k', '--keys', type=str,
+        default="job_keys",
+        help="name of attribute with job keys"
     )
 
     return p

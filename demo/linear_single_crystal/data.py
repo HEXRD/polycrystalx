@@ -39,9 +39,23 @@ matl_dict = {
 # Polycrystal Data
 
 def get_polycrystal_input(ax, ang_d):
-    """return polycrystal input for single crystal rotated about axis `ax`"""
+    """Return polycrystal input for single crystal
+
+    Parameters
+    ----------
+    ax: array(3)
+       axis of rotation
+    ang_d: float
+       angle of rotation in degrees
+
+    Returns
+    -------
+    inp: inputs.polycrystal.Polycrystal
+       the polycrystal input
+    """
     ms = get_micro(ax, ang_d)
     name = "-".join(("single-crystal", "xyz"[ax] + str(ang_d)))
+
     return inputs.polycrystal.Polycrystal(
         name=name,
         polycrystal=ms

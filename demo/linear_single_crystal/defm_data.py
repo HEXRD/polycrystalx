@@ -3,7 +3,7 @@ import numpy as np
 
 from polycrystalx import inputs
 from polycrystalx.inputs.tools import interpolate
-from polycrystal.utils.tensordata import TensorData
+from polycrystal.utils.tensor_data.mandel_system import MandelSystem
 
 
 X_COMP, Y_COMP, Z_COMP = 0, 1, 2
@@ -127,8 +127,22 @@ def get_input(key, matl):
 
 def traction(matl, ori, A, n):
     """Traction on surface with normal n of def with grad u = A for matl"""
-    C = matl.sample_stiffness(ori)
-    eps = TensorData(A.reshape(1, 3, 3))
-    sig6 = C @ eps.symm6[0]
-    sig = TensorData.from_parts(symm6=sig6.reshape((1,6))).matrices[0]
+    matl.output_system = "MANDEL"
+
+    """The following section of code computes the stress in the sample frame:
+    1. Convert strain from sample to crystal
+    2. Create the Mandel 6-vector for the crystal strain
+    3. Apply the 6x6 stiffness to obtain the stress in the crystal frame
+    4. Convert the stress 6-vector to a matrix, still in crystal frame
+    5. Convert the stress matrix from crystal to sample
+    6. Then you can apply the stress to the normal vector to get the traction.
+    """
+    C_c = matl.stiffness # crystal frame
+    eps_s = A
+    eps_c = ori @ A @ ori.T
+    eps_c6 = MandelSystem(eps_c).symm
+    sig_c6 = C_c @ eps_c6.T
+    sig_c = MandelSystem.from_parts(symm=sig_c6.T).matrices[0]
+    sig = ori.T @ A @ ori
+
     return sig @ n
