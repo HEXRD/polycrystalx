@@ -52,16 +52,13 @@ several types of boundary conditions:
 In this example, we apply traction on the top surface, and the strain will be zero except for the xx-component.
 ```
 defm_key = ("zmax-traction", 1, 1)
-```e
+```
 ## Running a Single Job
 To run a single job, use the `pxx_job` script.
 
 ```mpirun -n 2 pxx_job linear_single_crystal```
 
 ## Batch Job
-To run in batch, use the `pxx_suite` script. In the `batch` module, an iterator
-is set up to generate various combinations of the various inputs. The iterator
-generates keys that are used to create the job, and a `get_job(key)` function
-is used by the processing script to generate the actual job. Run like this:
+To run in batch, use the `pxx_suite` script. In the `batch` module, iterators are set up to generate different combinations of the various inputs. Each iterator generates a sequence of job keys that are used to create each job. The `batch.get_job(key)` function is used to create the `Job` instance from the keys. Run like this:
 
 ```pxx_suite -n 2 linear_single_crystal.batch```
