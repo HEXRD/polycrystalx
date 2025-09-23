@@ -54,11 +54,41 @@ In this example, we apply traction on the top surface, and the strain will be ze
 defm_key = ("zmax-traction", 1, 1)
 ```
 ## Running a Single Job
-To run a single job, use the `pxx_job` script.
+To run a single job, run the `pxx_job` script using `mpirun`.
 
 ```mpirun -n 2 pxx_job linear_single_crystal```
 
-## Batch Job
-To run in batch, use the `pxx_suite` script. In the `batch` module, iterators are set up to generate different combinations of the various inputs. Each iterator generates a sequence of job keys that are used to create each job. The `batch.get_job(key)` function is used to create the `Job` instance from the keys. Run like this:
+## Batch Jobs
+To run in batch, use the `pxx_suite` script. In the `batch` module, iterators are set up to generate different combinations of the various inputs. Each iterator generates a sequence of job keys that are used to create each job. The `batch.get_job(key)` function is used to create the `Job` instance from the keys.
 
-```pxx_suite -n 2 linear_single_crystal.batch```
+This example has two iterators. The first one is shown below. It's name is `all_materials_xx`. It creates jobs for every material in the material database, each job using the same meshe and microstructure and with displacement boundary conditions corresponding to an xx-strain field of 1.0. Note that the `itertools.product` is a python function that creates an iterator that takes all combinations of the four inputs. In this case, the material keys are the only keys that have more than item.
+```
+matl_keys = list(matl_dict.keys())
+poly_keys = [(0, 0)]
+mesh_keys = [(10, 20, 30)]
+defm_keys = [("full", 1, 1)]
+
+# This suite runs all materials on the same mesh with displacements
+# corresponding to an xx-strain field.
+all_materials_xx = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+```
+Run the suite like this. Note that `mpirun` is not used directly here, but it is called internally by the `pxx_suite` command.
+```pxx_suite -n 2 -k all_materials_xx linear_single_crystal.batch```
+
+The second batch suite is named `cubic_traction_z`.  It runs various types of traction boundary conditions for the same material, microstructure and mesh. The `zmax-traction` boundary condition applies traction on the top surface (`zmax`) and dipslacements eveverywhere else. The `zmax-traction-z` condition applies the z-component of traction on and x- and y-displacements on the top surface and displacments everywhere else. Finally, the `zmax-traction-xy` applies x- and y-tractions and a z-displacement on the top surface, again with dipslacements eveverywhere else.
+```
+matl_keys = ["cubic-211"]
+poly_keys = [(0, 0)]
+mesh_keys = [(10, 20, 30)]
+defm_keys = [
+    ("zmax-traction", 3, 3),
+    ("zmax-traction-z", 3, 3),
+    ("zmax-traction-xy", 3, 3)
+]
+
+# This suite runs various traction boundary conditions on the top surface
+# with a fixed mesh and a cubic material.
+cubic_traction_z = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+```
+Run the suite like this.
+```pxx_suite -n 2 -k cubic_traction_z linear_single_crystal.batch```
