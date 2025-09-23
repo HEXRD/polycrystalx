@@ -73,7 +73,9 @@ defm_keys = [("full", 1, 1)]
 all_materials_xx = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
 ```
 Run the suite like this. Note that `mpirun` is not used directly here, but it is called internally by the `pxx_suite` command.
-```pxx_suite -n 2 -k all_materials_xx linear_single_crystal.batch```
+```
+pxx_suite -n 2 -k all_materials_xx linear_single_crystal.batch
+```
 
 The second batch suite is named `cubic_traction_z`.  It runs various types of traction boundary conditions for the same material, microstructure and mesh. The `zmax-traction` boundary condition applies traction on the top surface (`zmax`) and dipslacements eveverywhere else. The `zmax-traction-z` condition applies the z-component of traction on and x- and y-displacements on the top surface and displacments everywhere else. Finally, the `zmax-traction-xy` applies x- and y-tractions and a z-displacement on the top surface, again with dipslacements eveverywhere else.
 ```
@@ -91,4 +93,6 @@ defm_keys = [
 cubic_traction_z = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
 ```
 Run the suite like this.
-```pxx_suite -n 2 -k cubic_traction_z linear_single_crystal.batch```
+```
+pxx_suite -n 2 -k cubic_traction_z linear_single_crystal.batch
+```
