@@ -17,6 +17,7 @@ def setup_output(outdir):
     outdir: str or Path
         name of output directory
     """
+    print("output directory: ", outdir)
     mpi_sync(from_0=False)
     if not os.path.exists(outdir):
         if myrank == 0:

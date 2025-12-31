@@ -146,6 +146,7 @@ class LinearElasticity:
         # Compute grain integrals.
 
         eps_int = np.zeros((num_grains := len(g_volumes), 6))
+        sig_int = np.zeros((num_grains := len(g_volumes), 6))
 
         V = fem.functionspace(ldr.mesh, ("DG", 0))
         gi_form, indicator, func = grain_integral(ldr.mesh, V)
@@ -153,6 +154,7 @@ class LinearElasticity:
         indmap = ldr.mesh.topology.index_map(ldr.mesh.topology.dim)
         allcells = np.arange(indmap.size_local).astype(np.int32)
         eps_fun = fem.Function(V)
+        sig_fun = fem.Function(V)
 
         with Timer() as t:
             indmap = {
@@ -161,6 +163,7 @@ class LinearElasticity:
             }
             for i in range(6):
                 j0, j1 = indmap[i]
+
                 eps_expr = fem.Expression(
                     strain[j0, j1], V.element.interpolation_points()
                 )
@@ -169,6 +172,16 @@ class LinearElasticity:
                     ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
                     eps_fun
                 )
+
+                sig_expr = fem.Expression(
+                    stress[j0, j1], V.element.interpolation_points()
+                )
+                sig_fun.interpolate(sig_expr, allcells)
+                sig_int[:, i] = grain_integrals(
+                    ldr.mesh.comm, gi_form, indicator, func, ldr.grain_cells,
+                    sig_fun
+                )
+
             elapsed = t.elapsed()
 
         if self.mpirank == 0:
@@ -176,11 +189,15 @@ class LinearElasticity:
 
         if self.mpirank == 0:
             eps_avg = np.zeros_like(eps_int)
+            sig_avg = np.zeros_like(eps_int)
             nz = g_volumes > 0.
             nnz = np.count_nonzero(g_volumes > 0)
             eps_avg[nz] = eps_int[nz]/g_volumes[nz].reshape(nnz, 1)
-            np.savez("grain-averages.npz", volume=g_volumes, strain=eps_avg)
-            #
+            sig_avg[nz] = sig_int[nz]/g_volumes[nz].reshape(nnz, 1)
+            np.savez(
+                "grain-averages.npz", volume=g_volumes, strain=eps_avg, stress=sig_avg
+            )
+
             self.write_xdmf()
 
     def write_xdmf(self, output="output.xdmf", paraview="paraview.xdmf"):

@@ -3,21 +3,24 @@ import itertools
 
 from polycrystalx import inputs
 
-from .data import (
-    get_material_input, get_polycrystal_input, get_mesh_input,
-    get_deformation_input, matl_dict
+from .job_data import (
+    get_material_input,
+    get_polycrystal_input,
+    get_mesh_input,
+    get_deformation_input,
 )
 
-suite = "linear_single_crystal"
+
+suite = "linear-single-crystal"
 process = "linear-elasticity"
 
 
 def get_job(key):
     matl, poly, mesh, defm = key
     matl_input = get_material_input(matl)
-    poly_input = get_polycrystal_input(*poly)
+    poly_input = get_polycrystal_input(poly)
     mesh_input = get_mesh_input(mesh)
-    defm_input = get_deformation_input(defm, matl)
+    defm_input = get_deformation_input(defm, matl_input, poly_input)
 
     return inputs.job.Job(
         suite = suite,
@@ -29,31 +32,44 @@ def get_job(key):
     )
 
 
-# Below are some job suites.
-
-matl_keys = list(matl_dict.keys())
-poly_keys = [(0, 0)]
-mesh_keys = [(10, 20, 30)]
-defm_keys = [("full", 1, 1)]
-
-# This suite runs all materials on the same mesh with displacements
-# corresponding to an xx-strain field.
-all_materials_xx = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+# Define suites of jobs.
 
 
-matl_keys = ["cubic-211"]
-poly_keys = [(0, 0)]
-mesh_keys = [(10, 20, 30)]
-defm_keys = [
-    ("zmax-traction", 3, 3),
-    ("zmax-traction-z", 3, 3),
-    ("zmax-traction-xy", 3, 3)
-]
+# All matrices A with a single cubic material, mesh and polcyrstal.
 
-# This suite runs various traction boundary conditions on the top surface with a
-# fixed mesh and a cubic material.
-cubic_traction_z = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+all_A = itertools.product(
+    ["cubic-321"],
+    [(2, 45)],
+    [(30, 30, 30)],
+    itertools.product(["full"], [0, 1, 2], [0, 1, 2])
+)
 
+# All materials for a single deformation.
 
-# This is the default job suite.
-job_keys = cubic_traction_z
+all_materials =  itertools.product(
+    ["identity-iso", "iso-21", "cubic-321", "cubic-211", "cubic-112", "cubic-321"],
+    [(0, 0)],
+    [(30, 30, 30)],
+    [("full", 0, 0)],
+)
+
+# Vary cyrstal orientation for a single deformation with traction BCs.
+
+vary_orientation = itertools.product(
+    ["cubic-321"],
+    [(0, 0), (0, 30), (1, 45), (2, 65)],
+    [(30, 30, 30)],
+    [("zmax-traction", 0, 0)],
+)
+
+# Vary boundary conditions.
+
+vary_bcs = itertools.product(
+    ["cubic-321"],
+    (1, 33)],
+    [(30, 30, 30)],
+    [
+        ("full", 0, 0), ("zmax-traction", 0, 0), ("zmax-traction-z", 0, 0),
+        ("zmax-traction-xy", 0, 0)
+    ],
+)

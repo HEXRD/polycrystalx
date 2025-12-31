@@ -1,98 +1,66 @@
-# Linear Single Crystal
+ ## Linear Single Crystal Demo
 
-This example uses simple test problems to illustrate how to set up a single job or a suite of jobs. The problems here are single crystal, meaning there is just one material and one orientation, so it's easy to set up problems where you know the answer.
+ The demo gives a suite of simple test problems on homogeneous deformations of a single crystal. The problems demonstrate how to specify materials, meshes and various boundary conditions. The materials are simple and unrealistic. The meshes are also simple --- rectangular meshes in three dimensions with regular subdivisions. Each deformation is defined by a linear displacement field, `u = Ax`.  The boundary conditions are determined from the deformation and can be specified as either displacements or a combination of displacements and tractions.
 
-## Jobs
-To run a simulation, you will need to define a `inputs.Job` instance. A `Job` has six components.
-```
-job = inputs.job.Job(
-    suite = suite,
-    process = process,
-    mesh_input = mesh_input,
-    material_input = material_input,
-    polycrystal_input = polycrystal_input,
-    deformation_input = deformation_input
-)
-```
-The `suite` and the `process` are simple strings. They give the name of the suite of simulations and the name of the material process being modeled. In this example, we have:
-```
-suite = "linear_single_crystal"
-process = "linear-elasticity"
-```
-The other four components describe the mesh, the material, the polycrystal (microstructure) and the applied deformation. Each of these components will have `key` (hashable type)  that can be used to generate the input. The key may be a string, a number or a tuple, or some combination of these. Each input is then built from the key.
+ There are four input specifications for each problem: material, mesh, polycrystal, and deformation.  Each input specification has a `key` that is used to full specify the inputs. We will discuss each input below.
 
-### Materials
-In the `data` module, there is a dictionary of elastic materials. It defines two
-isotropic materials and three cubic materials.  In this example, the materials are very simple and do not reflect actual materials. The material `key` is simply the name of the material. In this example, we set moduli that gives the identity stiffness matrix.
-```
-matl_key = "identity-iso"
-```
+### Material
+ The demo has a dictionary of elastic materials. Each material is an elastic `SingleCrystal` instance, from the companion `polycrystal` package. The key for the material input is the name of the material, the key in the material dictionary.
+
+ Choices are:     "identity-iso" "iso-21", "cubic-211", "cubic-121", "cubic-112" and "cubic-321". The first two are isotropic: one gives the identity matrix as the stiffness, and the other has a bulk modulus of 2 and a shear modulus of 1.  The last four are cubic materials and have variations on the bulk modulus and two shear moduli.
+
+See the file `linear_single_crystal/job_data/material.py`.
 
 ### Polycrystal
-In this example, we use a very simple polycrystal. In face, it is a single crystal. The only thing we need to assign is the crystal orientation. We chose to use a rotation through somae angle about one of the coordinate axes. The polycrystal key is a pair of numbers, the first being the axis of rotation: 0, 1, or 2.  The second is the angle of rotation. So for example, if the key were `(1, 45)`, that would represent a single crystal rotated 45 degrees about the y-axis. In this example, the material is isotropic so the orientation doesn't matter. This gives an orientation matrix of the identity.
-```
-poly_key = (0, 0)
-```
-### Meshes
-These are simple box meshes, and the `mesh key` is the tuple of divsions is used to generate the mesh.  These are purposely small since we are running problems with an
-exact answer. Here the mesh is a box with 40 subdivisions in each direction.
-```
-mesh_key = (40, 40, 40)
-```
-### Deformations
-For the test problems, we set up the problem data to have exact solutions of
-the form `u = Ax`.  We use nine choices for `A`; each one has zeros in all
-positions except for 1 spot, which has value 1.0.  Body forces are zero. We apply
-several types of boundary conditions:
-* full displacement (Dirichlet) boundary conditions on the whole boundary
-* traction boundary conditions on the top surface and displacement everywhere else
-* traction boundary conditions on the top in the z-component only, and displacements everywhere else
-* traction boundary conditions on the top in the `xy` directions only, and displacements everywhere else.
 
-In this example, we apply traction on the top surface, and the strain will be zero except for the xx-component.
-```
-defm_key = ("zmax-traction", 1, 1)
-```
-## Running a Single Job
-To run a single job, run the `pxx_job` script using `mpirun`.
+The `polycrystal` specification essentially provides the material assignment. The body is divided in to a finite number of `crystals`, and each crystal is assigned a material (phase) and an orientation (rotation matrix). In this case, there is only one crystal, so all that needs to be specified is its orientation. The key for this input is a pair of numbers `(ax_num, ang_deg`), which gives a coordinate axis (0, 1 or 2) and an angle in degrees. The crystal orientation will be the rotation through that angle and about that axis.; *e.g.* (2, 30) is the key for a rotation of 30 degrees about the z-axis.
 
+See the file `linear_single_crystal/job_data/polycrystal.py`.
+
+### Mesh
+The mesh is rectangular with extents of 1 in x-direction, 2 in the y, and 3 in the z. The key is the 3-tuple of divisions in each direction; *e.g.* `(10, 20, 30) is the key for the mesh with 10 divisions in x, 20 in y an d30 in z.
+
+See the file `linear_single_crystal/job_data/mesh.py`.
+
+### Deformation
+For this suite, the deformation is the most detailed input.  As said above, the user specifies a matrix `A`, which will determine the solution.  Other inputs determine the boundary conditions to be used for the problem. They are determined from the the matrix `A`, the material stiffness and crystal orientation. The key for this input is a 3-tuple `(bcs, i, j)`.  The `bcs` item is a string describing the boundary condition type. It can be one of `"full"`, `"zmax-traction"`, `"zmax-traction-z"`, and `"zmax-traction-xy"`. For "full", the boundary conditions are completely displacements; for "zmax-traction", they are traction BCs on the top z-suraface and displacement BCs everywhere else; for "zmax-traction-z", the z-component of traction and x- and y-displacements are specified on the top and displacements everywhere else; for "zmax-traction-xy", the x- and y- traction components and the z-displacement are specified on the top, with displacements everywhere else. The matrix `A` is a matrix of all zeros, except the `i, j` component, which is 1.
+
+See the file `linear_single_crystal/job_data/deformation.py`.
+
+### Running
+
+**Single Job**
+To run a single job, set the job keys in the `linear_single_crystal/__init__.py` file and use the `pxx_job` command.  Here is an example `__init__.py` file. It uses a simple cubic material, aa single crystal rotated 45 degrees about the z-axis, a very coarse mesh (5 x 6 x 7), and yz-shear with purely displacement boundary conditions.
+```"""Inputs Module"""
+from . import batch
+
+matl_key = "cubic-321"
+poly_key = (2, 45)
+mesh_key = (5, 6, 7)
+defm_key = ("full", 1, 2)
+
+jobkey = (matl_key, poly_key, mesh_key, defm_key)
+job = batch.get_job(jobkey)
+```
+To run it with two processes, use the command:
 ```mpirun -n 2 pxx_job linear_single_crystal```
 
-## Batch Jobs
-To run in batch, use the `pxx_suite` script. In the `batch` module, iterators are set up to generate different combinations of the various inputs. Each iterator generates a sequence of job keys that are used to create each job. The `batch.get_job(key)` function is used to create the `Job` instance from the keys.
+**Batch Job**
+To run a batch job, use the `pxx_suite` command on a job iterator, which are intended to be set in the `batch.py` file. In the demo batch file, we have three jobs defined:
 
-This example has two iterators. The first one is shown below. It's name is `all_materials_xx`. It creates jobs for every material in the material database, each job using the same meshe and microstructure and with displacement boundary conditions corresponding to an xx-strain field of 1.0. Note that the `itertools.product` is a python function that creates an iterator that takes all combinations of the four inputs. In this case, the material keys are the only keys that have more than item.
-```
-matl_keys = list(matl_dict.keys())
-poly_keys = [(0, 0)]
-mesh_keys = [(10, 20, 30)]
-defm_keys = [("full", 1, 1)]
+all_A
+: This suite iterates on all nine possible deformation matrices `A` for a fixed cubic material, a fixed crystal orientation and a fixed mesh with 30 subdivisions in each direction, and full displacement boundary conditions.
 
-# This suite runs all materials on the same mesh with displacements
-# corresponding to an xx-strain field.
-all_materials_xx = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
-```
-Run the suite like this. Note that `mpirun` is not used directly here, but it is called internally by the `pxx_suite` command.
-```
-pxx_suite -n 2 -k all_materials_xx linear_single_crystal.batch
-```
+all_materials
+:  This suite iterates on all materials for a fixed mesh, fixed crystal orientation, and a fixed deformation with full displacement boundary conditions.
 
-The second batch suite is named `cubic_traction_z`.  It runs various types of traction boundary conditions for the same material, microstructure and mesh. The `zmax-traction` boundary condition applies traction on the top surface (`zmax`) and dipslacements eveverywhere else. The `zmax-traction-z` condition applies the z-component of traction on and x- and y-displacements on the top surface and displacments everywhere else. Finally, the `zmax-traction-xy` applies x- and y-tractions and a z-displacement on the top surface, again with dipslacements eveverywhere else.
-```
-matl_keys = ["cubic-211"]
-poly_keys = [(0, 0)]
-mesh_keys = [(10, 20, 30)]
-defm_keys = [
-    ("zmax-traction", 3, 3),
-    ("zmax-traction-z", 3, 3),
-    ("zmax-traction-xy", 3, 3)
-]
+vary_orientation
+: This varies the crystal orientation for a fixed mesh, fixed material and a fixed deformation with traction boundary conditions on the top z-surface and displacements everywhere else.
 
-# This suite runs various traction boundary conditions on the top surface
-# with a fixed mesh and a cubic material.
-cubic_traction_z = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
+vary_bcs
+: This varies the boundary conditions for a fixed deformation matrix `A` and a single material, a single orientation and a single mesh.
+
+To run the `vary_bcs` suite, use:
 ```
-Run the suite like this.
-```
-pxx_suite -n 2 -k cubic_traction_z linear_single_crystal.batch
+pxx_suite -n 2 -k vary_bcs lsc.batch
 ```
