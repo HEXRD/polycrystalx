@@ -66,7 +66,7 @@ vary_orientation = itertools.product(
 
 vary_bcs = itertools.product(
     ["cubic-321"],
-    (1, 33)],
+    [(1, 33)],
     [(30, 30, 30)],
     [
         ("full", 0, 0), ("zmax-traction", 0, 0), ("zmax-traction-z", 0, 0),
