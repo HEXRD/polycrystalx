@@ -320,7 +320,7 @@ class _Loader:
         stf_fld= fem.Function(self.T6)
         ms = self.polycrystal_data.polycrystal
         for gi in range(ms.num_grains):
-            phase = int(ms.phase(np.array([gi])))
+            phase = int(ms.phase(np.array([gi]))[0])
             matl = self.material_data.materials[phase]
             cells = self.grain_cells[gi]
             stf = matl.stiffness
