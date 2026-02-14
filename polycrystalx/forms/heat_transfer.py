@@ -74,6 +74,22 @@ class HeatTransferProblem:
         """Return a tuple of required coefficients"""
         return self._coeffs
 
+    def flux(self, uh):
+        """Return form for thermal flux from solution uh
+
+        Parameters
+        ----------
+        uh: Function
+           a scalar temperature field
+
+        Returns
+        -------
+        Expression:
+           expression for thermal flux associated with `uh`
+        """
+        c = self.coefficients
+        return tosample(c.stiffness, c.orientation) * grad(uh)
+
     @property
     def forms(self):
         """Generate forms linear and bilinear form"""
