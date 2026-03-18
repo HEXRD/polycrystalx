@@ -78,7 +78,7 @@ class HeatTransfer:
     def postprocess(self, uh, ldr):
         """Write primary variables and compute grain averaged values"""
         # Compute flux field first.
-        flux_form = ufl.grad(uh)
+        flux_form = ldr.problem.flux(uh)
         flux_expr = fem.Expression(
             flux_form, ldr.V3.element.interpolation_points()
         )
