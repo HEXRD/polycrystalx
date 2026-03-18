@@ -37,7 +37,7 @@ class XDMFFile_Ext(io.XDMFFile):
 
         data_item = att[0]
         data_dims = data_item.get("Dimensions")
-        nv, nc = shp = (int(i) for i in data_dims.split())
+        nv, nc = shp = [int(i) for i in data_dims.split()]
 
         root_path = Path(self._filename).parent
         data_path = data_item.text
@@ -49,7 +49,7 @@ class XDMFFile_Ext(io.XDMFFile):
             values = dg[:].flatten()
 
         # Create fenicsx Function.
-        V = self._fspace(msh, att_type, att_cent)
+        V = self._fspace(msh, att_type, att_cent, shp)
         u = fem.Function(V)
 
         if att_cent == "Node":
@@ -85,15 +85,10 @@ class XDMFFile_Ext(io.XDMFFile):
     def _fspace(self, msh, datatype, datacenter, shp):
         """Function space from mesh and data type and center"""
         etype = self.fs_etype[datacenter]
-        if datatype == "Scalar":
-            eshape = None
-        elif datatype == "Vector":
-            eshape = shp[1]
-        elif datatype == "Tensor":
-            eshape = (3, 3)
 
-        if eshape is None:
-            V = fem.functionspace(msh, etype)
-        else:
-            V = fem.functionspace(msh, etype, shape=eshape)
-        return V
+        if datatype == "Vector":
+            etype += ((shp[1],),)
+        elif datatype == "Tensor":
+            etype += (((3, 3),),)
+
+        return fem.functionspace(msh, etype)

@@ -38,7 +38,7 @@ def linear(A, b=None):
     if b is None:
         return lambda x: np.array(A) @ x
     else:
-        return lambda x: np.array(A) @ x + np.array(b)
+        return lambda x: np.array(A) @ x + np.array(b).reshape(3, -1)
 
 
 linear_function = linear
