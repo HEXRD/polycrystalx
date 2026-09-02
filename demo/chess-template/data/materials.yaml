@@ -1,0 +1,63 @@
+# Sample materials file.
+about-this-database: >
+   This database is YAML-based. Not all symmetries are recognized on input.
+   There are abbreviated inputs for isotropic, cubic or hexaganol. For any
+   other symmetries you must treat them as "triclinic" and provide all
+   twenty-one moduli.
+
+# Elastic materials section
+
+process: linear_elasticity
+materials:
+- name     : ti_alpha
+  symmetry : hexagonal
+  units    : GPa
+  system   : VOIGT_GAMMA
+  moduli   :
+    c11 : 154
+    c12 : 86.0
+    c13 : 67.3
+    c44 : 183
+    c66 : 46.7
+  reference: >
+      Flowers, J. W., K. C. O’Brien, and P. C. McEleney. 1964.
+      “Elastic Constants of Alpha-Titanium Single Crystals at 25°C.”
+      Journal of the Less Common Metals 7 (5): 393–95.
+      https://doi.org/10.1016/0022-5088(64)90084-0.
+
+
+- name     : ti_beta
+  units    : GPa
+  symmetry : cubic
+  system   : VOIGT_GAMMA
+  moduli   :
+    c11 : 118.0
+    c12 : 79.0
+    c44 : 39.0
+  reference:  >
+      Bhattacharyya, Jishnu J., Sriramya Nair, Darren C. Pagan, Vahid Tari,
+      Anthony D. Rollett, and Sean R. Agnew. 2020. “In-Situ High Energy
+      X-Ray Diffraction Study of the Elastic Response of a Metastable
+      beta-Titanium Alloy.” Acta Materialia 197: 300–308.
+
+- name     : ti7Al4Mo_iso
+  units    : GPa
+  symmetry : isotropic
+  moduli   :
+        E  : 113.8
+        nu : 0.32
+  system   : VOIGT_GAMMA
+  reference: https://www.matweb.com, Titanium Ti-7Al-4Mo, STA
+
+- name     : lshr_660C
+  units    : GPa
+  symmetry : cubic
+  system   : VOIGT_GAMMA
+  moduli   :
+    c11 : 175.4
+    c12 : 107.8
+    c44 : 106.2
+  reference: >
+           Boyce, D., P. Shade, W. Musinski, et al. 2020. “Estimation of Anisotropic
+           Elastic Moduli from High Energy X-Ray Data and Finite Element Simulations.”
+           Materialia 12 (August): 100795. https://doi.org/10.1016/j.mtla.2020.100795.
