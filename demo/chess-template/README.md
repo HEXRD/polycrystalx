@@ -2,20 +2,31 @@
 
 This is an example template to illustrate how to use the `polycrystalx` package on CHESS far field HEDM results. For the example, we use data from a torsion experiment at APS in 2019.  Measurements were taken at zero load and at 12 load steps. The full data set has over 1,200 grains, but we only use about 100 to keep the example simpler. The material used was LSHR, a nickel alloy. The example runs elastic simulations on any or all load states.
 
-The `jobs` directory is a python package that contains the infrastructure to set up the inputs.  The main input is in the `jobs/__init__.py` file. You can set up suites of jobs in the `jobs/batch.py` file.   The core template (no just for CHESS data) provides the layout of the `jobs` package.
+The `jobs` directory is a python package where you define and assemble the inputs for your simulations.  The `jobs.batch` module is the highest level interface, where you put together job inputs into individual jobs or suites of jobs from simple `job keys`.  The `jobs.job_inputs` module contains the infrastructure for generating the `polycrystalx` inputs from the job keys.
 
 ## Running
 
-To run the simulation, use the `pxx_job` command with `mpirun`.
+To run a single simulation, use the `pxx_job` command with `mpirun`. This looks in the specified module (`jobs.batch`, in example below) for a `job` attribute, which contains a list of job keys, and uses that as the simulation input.
+```
+mpirun -n 2 pxx_job jobs.batch
+```
+
+To run a suite of simulations, use the `pxx_suite` command. It also takes the name of a module, and it will look, by default, for a `job_keys`  atrribute, which defines an iterator over lists of job keys. You can also specify a job suite by name as well.
 
 ```
-mpirun -n 2 pxx_job jobs
+pxx_suite -n 2 jobs.batch
 ```
-This uses processes and loads the `jobs` module.  Here is the `__init__.py` file.
+
+Here is the `jobs.batch` file for this example.
 
 ```
-"""Inputs Module"""
-from . import batch
+"""Batch jobs"""
+import itertools
+
+from .job_inputs import get_job
+
+
+# ==================== Single job.
 
 # Material key is an entry in the materials database (in jobs/data).
 matl_key = "lshr_660C"
@@ -31,12 +42,27 @@ mesh_key = "vor-050"
 defm_key = 12
 
 jobkey = (matl_key, poly_key, mesh_key, defm_key)
-job = batch.get_job(jobkey)
+job = get_job(jobkey)
+
+
+# ==================== Suites of jobs
+
+
+# Define the suite of jobs.
+
+matl_keys = ["lshr_660C"]
+poly_keys = ["ms"]
+mesh_keys = ["vor-050"]
+defm_keys = list(range(4))
+
+# The `itertools.product` function generates all combinations of items, one from
+# each list.  In this case, it will generate all the deformations for a single
+# material, microstructure and mesh.
+job_keys = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)
 ```
+Each job is defined by four inputs: the material, the microstructure, the mesh and the deformation.  Here the material is `lshr_660C`. The microstructure is a Voronoi tessellation based on the centroids and orientations in the unloaded state.  There are two meshes: one with a resolution of 50 microns and one with 25. There is a command line script to generate meshes of any resolution.  Finally, the deformation is torsion with a twist angle depending on the load state.
 
-Each job is defined by four inputs: the material, the microstructure, the mesh and the deformation.  Here the material is `lshr_660C`. The microstructure is a Voronoi tessellation based on the centroids and orientations in the unlaoded state.  There are two meshes: one with a resolution of 50 microns and one with 25. There is a command line script to generate meshes of any resolution.  Finally, the deformation is torsion with a twist angle depending on the load state.
-
-When the job runs, it writes output files into the `Outputs` directory with a path and a name based on the inputs. It writes the finite element to an HDF5 file with a standard XDMF header file (`output.XDMF`) and another header for viewing with paraview (`paraview.XDMF`). It also writes a numpy grain data file (`grain-averages.npz`)  with grain volumes, grain averaged strain and stress tensors.
+When the job runs, it writes output files into the `Outputs` directory with a path and a name based on the inputs. It writes the finite element output to an HDF5 file with a standard XDMF header file (`output.XDMF`) and another header for viewing with paraview (`paraview.XDMF`). It also writes a numpy grain data file (`grain-averages.npz`)  with grain volumes, grain averaged strain and stress tensors.
 
 ## Core Template
 

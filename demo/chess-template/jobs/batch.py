@@ -1,43 +1,39 @@
 """Batch jobs"""
 import itertools
 
-from polycrystalx import inputs
+from .job_inputs import get_job
 
 
-from .job_inputs import (
-    get_material_input,
-    get_microstructure_input,
-    get_mesh_input,
-    get_deformation_input,
-)
+# ==================== Single job.
+
+# Material key is an entry in the materials database (in jobs/data).
+matl_key = "lshr_660C"
+
+# For now, there is only one microstructure (from state 0).
+poly_key = "ms"
+
+# These are base names of neper meshes already generated.
+mesh_key = "vor-025"
+mesh_key = "vor-050"
+
+# This is a load state, between 0 and 12 inclusive.
+defm_key = 12
+
+jobkey = (matl_key, poly_key, mesh_key, defm_key)
+job = get_job(jobkey)
 
 
-suite = "torsion"
-process = "linear-elasticity"
-
-
-def get_job(key):
-    matl, poly, mesh, defm = key
-    matl_input = get_material_input(matl)
-    poly_input = get_microstructure_input(poly)
-    mesh_input = get_mesh_input(mesh)
-    defm_input = get_deformation_input(defm)
-
-    return inputs.job.Job(
-        suite = suite,
-        process = process,
-        mesh_input = mesh_input,
-        material_input = matl_input,
-        polycrystal_input = poly_input,
-        deformation_input = defm_input
-    )
+# ==================== Suites of jobs
 
 
 # Define the suite of jobs.
 
 matl_keys = ["lshr_660C"]
 poly_keys = ["ms"]
-mesh_keys = ["seeds-025"]
-defm_keys = list(range(13))
+mesh_keys = ["vor-050"]
+defm_keys = list(range(4))
 
+# The `itertools.product` function generates all combinations of items, one from
+# each list.  In this case, it will generate all the deformations for a single
+# material, microstructure and mesh.
 job_keys = itertools.product(matl_keys, poly_keys, mesh_keys, defm_keys)

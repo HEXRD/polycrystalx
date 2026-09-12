@@ -37,17 +37,12 @@ ffd0 = load_ffdata(0)
 seeds = ffd0.centroid
 s_in = in_box(seeds, EXTENTS)
 seeds = seeds[s_in]
-print(f"number of seeds in box: {len(seeds)}")
 select = np.arange(0, len(seeds), 7) # gives 108 grains
-print(f"number selected: {len(select)=}")
 np.savetxt(DATA_DIR / "seeds.txt", seeds[select])
+print(f"wrote {len(select)} centroids to 'seeds.txt'")
 
 # Next we write the orientations corresponding to the grain centroids above.
 # Convert orientations to rotation matrices.
 oris = ffd0.orientations[select]
 np.save(DATA_DIR / "orientations", oris)
-
-# Now check that everything worked.
-
-new_oris = np.load(DATA_DIR / "orientations.npy")
-assert np.allclose(oris, new_oris)
+print(f"wrote orientations to 'orientations.npy'")
