@@ -13,6 +13,7 @@ from ..loaders import mesh
 from ..loaders import material
 from ..loaders import polycrystal
 from ..loaders import deformation
+from ..loaders import options
 
 from ..forms.heat_transfer import HeatTransferProblem
 from ..utils import grain_integrals
@@ -67,7 +68,7 @@ class HeatTransfer:
         mybcs = ldr.temperature_bcs
         linprob = LinearProblem(
             a, L, bcs=mybcs,
-            petsc_options=default_petsc_options
+            petsc_options=ldr.options.solver_options
         )
 
         with Timer() as t:
@@ -238,6 +239,10 @@ class _Loader:
             job.deformation_input
         )
         self.body_heat = self.deformation_data.body_heat(self.V)
+
+        # Options data.
+        self.options = options.OptionsLoader(job.options_input)
+
 
     @property
     def mesh(self):
