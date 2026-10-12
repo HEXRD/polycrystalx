@@ -135,7 +135,6 @@ class HeatTransfer:
 
             # Now find grain averages from integrals.
             nz = g_volumes > 0.
-            print("nz shape: ", nz.shape, g_volumes)
             nnz = np.count_nonzero(g_volumes > 0)
             gvnnz = g_volumes[nz].reshape(nnz)
 
@@ -241,7 +240,7 @@ class _Loader:
         self.body_heat = self.deformation_data.body_heat(self.V)
 
         # Options data.
-        self.options = options.OptionsLoader(job.options_input)
+        self.options = options.OptionsLoader(job.options_input).options
 
 
     @property
