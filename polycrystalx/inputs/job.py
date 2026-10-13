@@ -2,12 +2,12 @@
 from collections import namedtuple
 import pathlib
 
-
-_JobBase = namedtuple(
-    "_JobBase", ["suite", "process", "mesh_input", "material_input",
-                "polycrystal_input", "deformation_input", "options"],
-    defaults=[None]
-)
+_flds = [
+    "suite", "process", "mesh_input", "material_input", "polycrystal_input",
+    "deformation_input", "options_input"
+]
+_JobBase = namedtuple("_JobBase", _flds, defaults=[None])
+del _flds
 
 
 class Job(_JobBase):
@@ -27,8 +27,8 @@ class Job(_JobBase):
        input specification for the polycrystal configuration
     deformation_input: inputs.deformation_input specification
        input deformation specification
-    options: (not yet implemented)
-       options
+    options_input: inputs.options.Option | None
+       user options
     """
 
     @property
@@ -41,8 +41,8 @@ class Job(_JobBase):
             f"-{self.polycrystal_input.name}"
             f"-{self.deformation_input.name}"
         )
-        if self.options:
-            name += f"-{self.options.name}"
+        if self.options_input is not None:
+            name += f"-{self.options_input.name}"
 
         return outbase / name
 

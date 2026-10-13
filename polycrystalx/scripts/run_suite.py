@@ -15,7 +15,6 @@ def main():
     """run a suite of jobs"""
     p = argparser(*sys.argv)
     args = p.parse_args()
-    print("job keys: ", args.keys)
 
     user_module = get_input_module(args.input_module)
     if not hasattr(user_module, args.keys):

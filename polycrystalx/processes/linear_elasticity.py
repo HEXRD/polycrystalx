@@ -15,20 +15,12 @@ from ..loaders import mesh
 from ..loaders import material
 from ..loaders import polycrystal
 from ..loaders import deformation
+from ..loaders import options
 from ..forms.common import sigs_3x3, sigs_thermal
 from ..forms.linear_elasticity import (
     LinearElasticity as LinearElasticityProblem
 )
 from ..utils import grain_integrals
-
-
-default_petsc_options={
-    "ksp_type": "cg",
-    "ksp_rtol": 1e-6,
-    "ksp_atol": 1e-10,
-    "ksp_max_it": 5000,
-    "pc_type": "jacobi",
-}
 
 
 class LinearElasticity:
@@ -77,7 +69,7 @@ class LinearElasticity:
         print("setting up linear problem", flush=True)
         problem = LinearProblem(
             a, L, bcs=mybcs,
-            petsc_options=default_petsc_options
+            petsc_options=ldr.options.solver_options
         )
         # petsc_options={"ksp_type": "preonly", "pc_type": "lu"}
 
@@ -90,7 +82,7 @@ class LinearElasticity:
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
-            msg = f"solver diverged: iterations = {solver.its}"
+            msg = f"solver failed to converge: iterations = {solver.its}"
             raise RuntimeError(msg)
 
         print("postprocessing")
@@ -245,15 +237,15 @@ class LinearElasticity:
 
 class _Loader:
 
-    def __init__(self, input_mod):
+    def __init__(self, job):
 
-        self.input_module = input_mod
+        self.jobule = job
 
         # Material Data
-        self.material_data = material.LinearElasticity(input_mod.material_input)
+        self.material_data = material.LinearElasticity(job.material_input)
 
         # Mesh Data and Function Spaces
-        self.mesh_data = mesh.MeshLoader(input_mod.mesh_input)
+        self.mesh_data = mesh.MeshLoader(job.mesh_input)
 
         self.problem = LinearElasticityProblem(self.mesh)
         self.V = self.problem.V
@@ -262,7 +254,7 @@ class _Loader:
 
         # Microstructure Data
         self.polycrystal_data = polycrystal.Polycrystal(
-            input_mod.polycrystal_input
+            job.polycrystal_input
         )
         if self.polycrystal_data.use_meshtags:
             self.cell_tags = self.mesh_data.cell_tags
@@ -281,7 +273,7 @@ class _Loader:
 
         # Deformation Data
         self.deformation_data = deformation.LinearElasticity(
-            input_mod.deformation_input
+            job.deformation_input
         )
         self.force_density = self.deformation_data.force_density(self.V)
 
@@ -291,6 +283,10 @@ class _Loader:
         self.plastic_distortion = self.deformation_data.plastic_distortion(
             self.T
         )
+
+        # Options data.
+        self.options = options.OptionsLoader(job.options_input).options
+
 
     @property
     def mesh(self):
