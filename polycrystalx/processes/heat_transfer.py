@@ -53,16 +53,6 @@ class HeatTransfer:
             coeffs.fluxes.append(fbc)
         a, L = ldr.problem.forms
 
-        # Make temperature BCs.
-
-        default_petsc_options = {
-            "ksp_type": "cg",
-            "ksp_rtol": 1e-6,
-            "ksp_atol": 1e-10,
-            "ksp_max_it": 5000,
-            "pc_type": "jacobi",
-        }
-
         # Set up the linear problem and solve.
 
         mybcs = ldr.temperature_bcs
@@ -80,7 +70,8 @@ class HeatTransfer:
         if solver.is_converged:
             print(f"solver converged: iterations = {solver.its}")
         else:
-            msg = f"solver diverged: iterations = {solver.its}"
+            msg = f"solver failed to converge: iterations = {solver.its}"
+            raise RuntimeError(msg)
 
         print("postprocessing ...")
         self.postprocess(uh, ldr, outdir)
